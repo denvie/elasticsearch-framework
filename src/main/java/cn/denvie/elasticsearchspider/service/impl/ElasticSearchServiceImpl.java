@@ -10,6 +10,10 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -26,6 +30,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +46,47 @@ public class ElasticSearchServiceImpl implements ElasticSearchService {
     private ObjectMapper objectMapper;
 
     @Override
-    public boolean save(String index, ElasticSearchBean... sources) throws Exception {
+    public boolean createIndex(String index) throws Exception {
+        return createIndex(index, null, null);
+    }
+
+    @Override
+    public boolean createIndex(String index, Map<String, String> settings,
+                               Map<String, Map<String, Object>> mappings) throws Exception {
+        CreateIndexRequest request = new CreateIndexRequest(index);
+
+        // index settings
+        if (settings != null && !settings.isEmpty()) {
+            Settings.Builder settingsBuilder = Settings.builder();
+            for (Map.Entry<String, String> entry : settings.entrySet()) {
+                settingsBuilder.put(entry.getKey(), entry.getValue());
+            }
+            request.settings(settingsBuilder);
+        }
+        // index mappings
+        if (mappings != null && !mappings.isEmpty()) {
+            Map<String, Object> properties = new HashMap<>();
+            for (Map.Entry<String, Map<String, Object>> fieldMappings : mappings.entrySet()) {
+                properties.put(fieldMappings.getKey(), fieldMappings.getValue());
+            }
+            Map<String, Object> indexMapping = new HashMap<>();
+            indexMapping.put("properties", properties);
+            request.mapping(indexMapping);
+        }
+
+        CreateIndexResponse response = restHighLevelClient.indices().create(
+                request, RequestOptions.DEFAULT);
+        return response.isAcknowledged();
+    }
+
+    @Override
+    public boolean isIndexExists(String index) throws Exception {
+        GetIndexRequest request = new GetIndexRequest(index);
+        return restHighLevelClient.indices().exists(request, RequestOptions.DEFAULT);
+    }
+
+    @Override
+    public boolean saveDocuments(String index, ElasticSearchBean... sources) throws Exception {
         if (sources == null || sources.length == 0) {
             return false;
         }
@@ -58,14 +103,14 @@ public class ElasticSearchServiceImpl implements ElasticSearchService {
     }
 
     @Override
-    public <T> List<T> search(String index, String field, String keyword,
-                                            int pageNo, int pageSize, Class<T> beanClass) throws Exception {
-        return search(index, field, keyword, null, null, pageNo, pageSize, beanClass);
+    public <T> List<T> searchDocuments(String index, String field, String keyword,
+                                       int pageNo, int pageSize, Class<T> beanClass) throws Exception {
+        return searchDocuments(index, field, keyword, null, null, pageNo, pageSize, beanClass);
     }
 
     @Override
-    public <T> List<T> search(String index, String field, String keyword, String preTags, String postTags,
-                              int pageNo, int pageSize, Class<T> beanClass) throws Exception {
+    public <T> List<T> searchDocuments(String index, String field, String keyword, String preTags, String postTags,
+                                       int pageNo, int pageSize, Class<T> beanClass) throws Exception {
         SearchRequest request = new SearchRequest(index);
         // 构建搜索条件
         SearchSourceBuilder builder = new SearchSourceBuilder();

@@ -21,6 +21,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
@@ -35,6 +36,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootTest
 class ElasticsearchApiTests {
@@ -50,6 +53,20 @@ class ElasticsearchApiTests {
     @Test
     public void createIndex() throws IOException {
         CreateIndexRequest request = new CreateIndexRequest(index);
+
+        request.settings(Settings.builder()
+                .put("index.number_of_shards", 1)
+                .put("index.number_of_replicas", 1)
+                .build());
+
+        Map<String, Object> properties = new HashMap<>();
+        Map<String, Object> ikSmart = new HashMap<>();
+        ikSmart.put("type", "text");
+        ikSmart.put("analyzer", "ik_smart");
+        properties.put("name", ikSmart);
+        properties.put("tags", ikSmart);
+        request.mapping(properties);
+
         CreateIndexResponse response = restHighLevelClient.indices().create(request, RequestOptions.DEFAULT);
         System.out.println(objectMapper.writeValueAsString(response));
     }
