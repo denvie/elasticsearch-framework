@@ -22,6 +22,7 @@ import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,6 +60,12 @@ public class ElasticSearchServiceImpl implements ElasticSearchService {
     @Override
     public <T> List<T> search(String index, String field, String keyword,
                                             int pageNo, int pageSize, Class<T> beanClass) throws Exception {
+        return search(index, field, keyword, null, null, pageNo, pageSize, beanClass);
+    }
+
+    @Override
+    public <T> List<T> search(String index, String field, String keyword, String preTags, String postTags,
+                              int pageNo, int pageSize, Class<T> beanClass) throws Exception {
         SearchRequest request = new SearchRequest(index);
         // 构建搜索条件
         SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -67,29 +74,34 @@ public class ElasticSearchServiceImpl implements ElasticSearchService {
                 .timeout(TimeValue.timeValueSeconds(TIMEOUT_SECONDS))
                 .from((pageNo - 1) * pageSize)
                 .size(pageSize).highlighter();
-        HighlightBuilder highlightBuilder = new HighlightBuilder();
-        highlightBuilder.field(field);
-        highlightBuilder.preTags("<span style='color=red;'>");
-        highlightBuilder.postTags("</span>");
-        builder.highlighter(highlightBuilder);
-        request.source(builder);
+        // 高亮查询
+        if (!StringUtils.isEmpty(preTags) && !StringUtils.isEmpty(postTags)) {
+            HighlightBuilder highlightBuilder = new HighlightBuilder();
+            highlightBuilder.field(field);
+            highlightBuilder.preTags(preTags);
+            highlightBuilder.postTags(postTags);
+            builder.highlighter(highlightBuilder);
+            request.source(builder);
+        }
 
         SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
         SearchHits hits = response.getHits();
         List<T> result = new ArrayList<>();
         for (SearchHit hit : hits) {
-            // 解析高亮的字段
-            Map<String, HighlightField> highlightFieldMap = hit.getHighlightFields();
-            HighlightField highlightField = highlightFieldMap.get(field);
             Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-            if (highlightField != null) {
-                Text[] texts = highlightField.fragments();
-                StringBuilder sb = new StringBuilder();
-                for (Text text : texts) {
-                    sb.append(text.string());
+            // 解析高亮的字段
+            if (!StringUtils.isEmpty(preTags) && !StringUtils.isEmpty(postTags)) {
+                Map<String, HighlightField> highlightFieldMap = hit.getHighlightFields();
+                HighlightField highlightField = highlightFieldMap.get(field);
+                if (highlightField != null) {
+                    Text[] texts = highlightField.fragments();
+                    StringBuilder sb = new StringBuilder();
+                    for (Text text : texts) {
+                        sb.append(text.string());
+                    }
+                    // 使用高亮的字段替换掉原来的内容
+                    sourceAsMap.put(field, sb.toString());
                 }
-                // 高亮的字段替换掉原来的内容
-                sourceAsMap.put(field, sb.toString());
             }
             result.add(objectMapper.readValue(objectMapper.writeValueAsString(sourceAsMap), beanClass));
         }

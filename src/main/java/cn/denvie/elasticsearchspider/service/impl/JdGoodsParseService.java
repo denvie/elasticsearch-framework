@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class JdHtmlParseService implements HtmlParseService<List<JdGoods>> {
+public class JdGoodsParseService implements HtmlParseService<List<JdGoods>> {
 
     @Override
     public List<JdGoods> parse(String url) throws Exception {

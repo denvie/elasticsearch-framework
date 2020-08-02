@@ -11,4 +11,7 @@ public interface ElasticSearchService {
     <T> List<T> search(String index, String field, String keyword,
                        int pageNo, int pageSize, Class<T> beanClass) throws Exception;
 
+    <T> List<T> search(String index, String field, String keyword, String preTags, String postTags,
+                       int pageNo, int pageSize, Class<T> beanClass) throws Exception;
+
 }
