@@ -1,4 +1,4 @@
-package cn.denvie.elasticsearchspider.domain;
+package cn.denvie.elasticsearchspider.spider.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

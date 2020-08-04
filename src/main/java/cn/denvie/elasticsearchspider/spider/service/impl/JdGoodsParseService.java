@@ -1,7 +1,7 @@
-package cn.denvie.elasticsearchspider.service.impl;
+package cn.denvie.elasticsearchspider.spider.service.impl;
 
-import cn.denvie.elasticsearchspider.domain.JdGoods;
-import cn.denvie.elasticsearchspider.service.HtmlParseService;
+import cn.denvie.elasticsearchspider.spider.domain.JdGoods;
+import cn.denvie.elasticsearchspider.spider.service.HtmlParseService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -9,15 +9,22 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 京东商品解析服务。
+ *
+ * @author denvie
+ * @date 2020/8/4
+ */
 @Service
 public class JdGoodsParseService implements HtmlParseService<List<JdGoods>> {
 
     @Override
-    public List<JdGoods> parse(String url) throws Exception {
+    public List<JdGoods> parse(String url) throws IOException {
         List<JdGoods> result = new ArrayList<>();
         Document document = Jsoup.parse(new URL(url), 30000);
         // 获取商品列表元素
@@ -36,7 +43,7 @@ public class JdGoodsParseService implements HtmlParseService<List<JdGoods>> {
             }
             String price = element.getElementsByClass("p-price").eq(0).text();
             String shop = element.getElementsByClass("p-shop").eq(0).text();
-            result.add(new JdGoods(link, title, img, price, shop));
+            result.add(new JdGoods(null, link, title, img, price, shop));
         }
         return result;
     }

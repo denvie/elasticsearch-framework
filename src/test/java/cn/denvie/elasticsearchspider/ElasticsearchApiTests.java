@@ -1,6 +1,6 @@
 package cn.denvie.elasticsearchspider;
 
-import cn.denvie.elasticsearchspider.domain.User;
+import cn.denvie.elasticsearchspider.spider.domain.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;

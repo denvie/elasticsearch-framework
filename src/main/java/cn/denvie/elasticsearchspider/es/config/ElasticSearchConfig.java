@@ -1,4 +1,4 @@
-package cn.denvie.elasticsearchspider.config;
+package cn.denvie.elasticsearchspider.es.config;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -10,9 +10,14 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * @author denvie
+ * @date 2020/8/4
+ */
 @Configuration
 public class ElasticSearchConfig {
 
+    @Value("${elasticsearch.hosts}")
     private List<String> hosts = Arrays.asList("localhost:9200");
 
     @Bean
