@@ -1,10 +1,10 @@
 package cn.denvie.elasticsearchspider.es.service;
 
 import cn.denvie.elasticsearchspider.es.model.EsIndexBean;
+import cn.denvie.elasticsearchspider.es.model.PagingResult;
 import cn.denvie.elasticsearchspider.es.model.SearchParam;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -64,5 +64,5 @@ public interface ElasticsearchService {
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> List<T> search(String indexes, SearchParam searchParam, Class<T> beanClass) throws IOException;
+    <T> PagingResult<T> search(String indexes, SearchParam searchParam, Class<T> beanClass) throws IOException;
 }

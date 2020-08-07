@@ -1,5 +1,6 @@
 package cn.denvie.elasticsearchspider.controller;
 
+import cn.denvie.elasticsearchspider.es.model.PagingResult;
 import cn.denvie.elasticsearchspider.es.model.QueryType;
 import cn.denvie.elasticsearchspider.es.model.SearchField;
 import cn.denvie.elasticsearchspider.es.model.SearchParam;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +30,15 @@ public class ElasticSearchController {
     @Autowired
     private JdGoodsParseService jdGoodsParseService;
 
+    /**
+     * 创建索引。
+     *
+     * @param index 索引名称
+     * @return true: 创建成功；false: 创建失败
+     * @throws Exception
+     */
     @PostMapping("/createJdGoodsIndex")
-    public boolean createJdGoodsIndex(String index) throws Exception {
+    public boolean createJdGoodsIndex(String index) throws IOException {
         if (elasticSearchService.isIndexExists(index)) {
             return true;
         }
@@ -37,26 +46,21 @@ public class ElasticSearchController {
         Map<String, String> settings = new HashMap<>();
         settings.put("index.number_of_shards", "1");
         settings.put("index.number_of_replicas", "1");
-
-        Map<String, Object> normalFieldMapping = new HashMap<>();
-        normalFieldMapping.put("type", "text");
-        Map<String, Object> ikFieldMapping = new HashMap<>();
-        ikFieldMapping.put("type", "text");
-        ikFieldMapping.put("analyzer", "ik_max_word");
-        ikFieldMapping.put("search_analyzer", "ik_smart");
-
-        Map<String, Map<String, Object>> mappings = new HashMap<>();
-        mappings.put("link", normalFieldMapping);
-        mappings.put("title", ikFieldMapping);
-        mappings.put("img", normalFieldMapping);
-        mappings.put("price", normalFieldMapping);
-        mappings.put("shop", ikFieldMapping);
+        Map<String, Map<String, Object>> mappings = JdGoods.mappings();
 
         return elasticSearchService.createIndex(index, settings, mappings);
     }
 
+    /**
+     * 爬取京东商品。
+     *
+     * @param keyword 京东商品关键字
+     * @param pageNo  爬取第几页数据
+     * @return 商品列表
+     * @throws Exception
+     */
     @GetMapping("/crawlJdGoods")
-    public List<JdGoods> crawlJdGoods(String keyword, int pageNo) throws Exception {
+    public List<JdGoods> crawlJdGoods(String keyword, int pageNo) throws IOException {
         // 爬取数据
         String url = String.format("https://search.jd.com/Search?keyword=%s&page=%d", keyword, pageNo);
         List<JdGoods> jdGoodsList = jdGoodsParseService.parse(url);
@@ -66,9 +70,9 @@ public class ElasticSearchController {
     }
 
     @GetMapping("/searchJdGoods")
-    public List<JdGoods> searchJdGoods(String keyword, int pageNo, int pageSize) throws Exception {
+    public PagingResult<JdGoods> searchJdGoods(String keyword, int pageNo, int pageSize) throws IOException {
         SearchParam searchParam = new SearchParam.Builder()
-                .addSearchField(new SearchField("title", keyword, QueryType.MATCH))
+                .searchField(new SearchField("title", keyword, QueryType.MATCH))
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .build();

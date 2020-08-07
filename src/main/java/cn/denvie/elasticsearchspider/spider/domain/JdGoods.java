@@ -1,11 +1,15 @@
 package cn.denvie.elasticsearchspider.spider.domain;
 
 import cn.denvie.elasticsearchspider.es.model.EsIndexBean;
+import cn.denvie.elasticsearchspider.es.utils.MappingUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -23,15 +27,27 @@ public class JdGoods implements EsIndexBean {
     private String img;
     private String price;
     private String shop;
+    private Date createTime;
 
     @Override
     public String getEsIndexId() {
-        if (StringUtils.isEmpty(link)) {
-            if (StringUtils.isEmpty(esIndexId)) {
+        if (StringUtils.isBlank(link)) {
+            if (StringUtils.isBlank(esIndexId)) {
                 esIndexId = UUID.randomUUID().toString().replace("-", "");
             }
             return esIndexId;
         }
         return link.hashCode() + "";
+    }
+
+    public static Map<String, Map<String, Object>> mappings() {
+        Map<String, Map<String, Object>> mappings = new HashMap<>();
+        mappings.put("link", MappingUtils.textMapping());
+        mappings.put("title", MappingUtils.ikMapping());
+        mappings.put("img", MappingUtils.textMapping());
+        mappings.put("price", MappingUtils.textMapping());
+        mappings.put("shop", MappingUtils.ikMapping());
+        mappings.put("createTime", MappingUtils.dateMapping());
+        return mappings;
     }
 }

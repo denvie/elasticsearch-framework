@@ -1,9 +1,6 @@
 package cn.denvie.elasticsearchspider.es.service.impl;
 
-import cn.denvie.elasticsearchspider.es.model.EsIndexBean;
-import cn.denvie.elasticsearchspider.es.model.RangeValue;
-import cn.denvie.elasticsearchspider.es.model.SearchField;
-import cn.denvie.elasticsearchspider.es.model.SearchParam;
+import cn.denvie.elasticsearchspider.es.model.*;
 import cn.denvie.elasticsearchspider.es.service.ElasticsearchService;
 import cn.denvie.elasticsearchspider.es.utils.BeanMapUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,7 +105,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     @Override
-    public <T> List<T> search(String indexes, SearchParam searchParam, Class<T> beanClass)
+    public <T> PagingResult<T> search(String indexes, SearchParam searchParam, Class<T> beanClass)
             throws IOException {
         if (searchParam == null || searchParam.getSearchFieldList() == null
                 || searchParam.getSearchFieldList().isEmpty()) {
@@ -117,9 +114,6 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         SearchRequest request = new SearchRequest(indexes);
         SearchSourceBuilder builder = new SearchSourceBuilder();
         SearchField searchField = searchParam.getSearchFieldList().get(0);
-        // 设置分页参数
-        builder.from((searchParam.getPageNo() - 1) * searchParam.getPageSize());
-        builder.size(searchParam.getPageSize());
         // 构建搜索条件，如：match, term, range
         switch (searchField.getQueryType()) {
             case MATCH:
@@ -130,7 +124,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                 break;
             case RANGE:
                 RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(searchField.getName());
-                ((RangeValue)searchField.getValue()).inflate(rangeQueryBuilder);
+                ((RangeValue) searchField.getValue()).inflate(rangeQueryBuilder);
                 builder.query(rangeQueryBuilder);
                 break;
             default:
@@ -145,13 +139,16 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
             highlightBuilder.preTags(searchParam.getHighlightPreTags());
             highlightBuilder.postTags(searchParam.getHighlightPostTags());
             builder.highlighter(highlightBuilder);
-            request.source(builder);
         }
         // 设置排序
         if (searchParam.getOrderField() != null) {
             builder.sort(searchParam.getOrderField().getName(), searchParam.getOrderField().getSortOrder());
         }
+        // 设置分页参数
+        builder.from((searchParam.getPageNo() - 1) * searchParam.getPageSize());
+        builder.size(searchParam.getPageSize());
         // 执行搜索
+        request.source(builder);
         SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
         SearchHits hits = response.getHits();
         List<T> result = new ArrayList<>();
@@ -164,7 +161,8 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                 result.add(objectMapper.readValue(objectMapper.writeValueAsString(sourceAsMap), beanClass));
             }
         }
-        return result;
+        return new PagingResult<>(hits.getTotalHits().value, result,
+                searchParam.getPageNo(), searchParam.getPageSize());
     }
 
     private Map<String, Object> resolveHighlightField(SearchHit hit, String field,

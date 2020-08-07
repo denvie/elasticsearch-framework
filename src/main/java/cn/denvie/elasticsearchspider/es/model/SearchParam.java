@@ -17,7 +17,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SearchParam {
-
     private List<SearchField> searchFieldList;
     private OrderField orderField;
     private String highlightPreTags;
@@ -33,8 +32,13 @@ public class SearchParam {
         private int pageNo = 1;
         private int pageSize = 10;
 
-        public Builder addSearchField(SearchField searchField) {
+        public Builder searchField(SearchField searchField) {
             this.searchFieldList.add(searchField);
+            return this;
+        }
+
+        public Builder searchField(String name, Object value, QueryType queryType) {
+            this.searchFieldList.add(new SearchField(name, value, queryType));
             return this;
         }
 
@@ -68,5 +72,4 @@ public class SearchParam {
                     highlightPreTags, highlightPostTags, pageNo, pageSize);
         }
     }
-
 }

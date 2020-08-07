@@ -1,14 +1,11 @@
 package cn.denvie.elasticsearchspider.es.model;
 
-import lombok.Data;
-
 /**
  * 查询类型。
  *
  * @author denvie
  * @date 2020/8/4
  */
-@Data
 public enum QueryType {
     /**
      * 匹配查询
