@@ -3,6 +3,7 @@ package cn.denvie.elasticsearchspider.controller;
 import cn.denvie.elasticsearchspider.es.model.*;
 import cn.denvie.elasticsearchspider.es.service.ElasticsearchService;
 import cn.denvie.elasticsearchspider.es.utils.SearchParamBuilder;
+import cn.denvie.elasticsearchspider.es.utils.SettingBuilder;
 import cn.denvie.elasticsearchspider.spider.domain.JdGoods;
 import cn.denvie.elasticsearchspider.spider.service.impl.JdGoodsParseService;
 import com.google.common.base.Splitter;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,9 +48,10 @@ public class ElasticSearchController {
             return true;
         }
 
-        Map<String, String> settings = new HashMap<>();
-        settings.put("index.number_of_shards", "1");
-        settings.put("index.number_of_replicas", "1");
+        Map<String, String> settings = new SettingBuilder()
+                .number_of_replicas("1")
+                .number_of_shards("1")
+                .build();
         Map<String, Map<String, Object>> mappings = JdGoods.mappings();
 
         return elasticSearchService.createIndex(index, settings, mappings);
@@ -128,5 +129,4 @@ public class ElasticSearchController {
         MultiSearchParam searchParam = searchParamBuilder.buildMultiSearchParam();
         return elasticSearchService.boolSearch("jd-goods", searchParam, JdGoods.class);
     }
-
 }

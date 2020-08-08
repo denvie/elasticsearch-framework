@@ -106,6 +106,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
             throws IOException {
         SearchRequest request = new SearchRequest(indexes);
         SearchSourceBuilder builder = new SearchSourceBuilder();
+        builder.query(QueryBuilders.matchAllQuery());
         // 设置搜索参数
         if (searchParam != null) {
             setupSearchBuilder(builder, searchParam);
