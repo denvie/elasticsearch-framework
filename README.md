@@ -13,3 +13,7 @@
     http://localhost:8080/crawlJdGoods?keyword=java&pageNo=1
 * 搜索京东商品：
     http://localhost:8080/searchJdGoods?keyword=java&pageNo=1&pageSize=5
+* 多字段搜索：
+    http://localhost:8080/searchJdGoods?field=title,shop&keyword=xxx&pageNo=1&pageSize=5
+* 多条件搜索：
+    http://localhost:8080/boolSearchJdGoods?title=xxx&shop=yyy&startTime=2020-08-07 12:12:12&endTime=2020-08-08 12:12:12&pageNo=1&pageSize=5
