@@ -1,24 +1,44 @@
 package cn.denvie.elasticsearchspider.es.model;
 
 /**
- * 查询类型。
+ * 搜索类型。
  *
  * @author denvie
  * @date 2020/8/4
  */
 public enum QueryType {
     /**
-     * 匹配查询
+     * 匹配搜索
      */
     MATCH(1, "match"),
     /**
-     * 精确查询
+     * 多字段匹配搜索
      */
-    TERM(2, "term"),
+    MULTI_MATCH(2, "multi_match"),
     /**
-     * 范围查询
+     * 精确搜索
      */
-    RANGE(3, "range");
+    TERM(3, "term"),
+    /**
+     * 范围搜索
+     */
+    RANGE(4, "range"),
+    /**
+     * bool搜索, must
+     */
+    BOOL_MUST(10, "must"),
+    /**
+     * bool搜索, must_not
+     */
+    BOOL_MUST_NOT(11, "must_not"),
+    /**
+     * bool搜索, must_not
+     */
+    BOOL_MUST_SHOULD(12, "should"),
+    /**
+     * bool搜索, filter
+     */
+    BOOL_MUST_FILTER(13, "filter");
 
     private int code;
     private String queryName;

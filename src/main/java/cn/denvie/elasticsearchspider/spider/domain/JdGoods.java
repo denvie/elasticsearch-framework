@@ -20,7 +20,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JdGoods implements EsIndexBean {
-
     private String esIndexId;
     private String link;
     private String title;

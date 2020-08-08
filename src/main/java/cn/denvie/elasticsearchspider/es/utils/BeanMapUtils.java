@@ -14,7 +14,6 @@ import java.util.Map;
  * @date 2020/8/4
  */
 public class BeanMapUtils {
-
     /**
      * 将Bean转换为Map。
      */

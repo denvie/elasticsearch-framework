@@ -16,7 +16,6 @@ import java.util.List;
  */
 @Configuration
 public class ElasticSearchConfig {
-
     @Value("${elasticsearch.hosts}")
     private List<String> hosts = Arrays.asList("localhost:9200");
 
@@ -30,5 +29,4 @@ public class ElasticSearchConfig {
         }
         return new RestHighLevelClient(RestClient.builder(httpHosts));
     }
-
 }

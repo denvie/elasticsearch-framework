@@ -68,8 +68,7 @@ public class RangeValue extends HashMap<String, Object> {
         if (lt() != null) builder.lt(lt());
         if (lte() != null) builder.lte(lte());
         if (format() != null) builder.format(format());
-        if (boost() > 0) builder.boost(boost());
+        builder.boost(boost());
         return builder;
     }
-
 }

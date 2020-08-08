@@ -1,18 +1,23 @@
 package cn.denvie.elasticsearchspider.controller;
 
-import cn.denvie.elasticsearchspider.es.model.PagingResult;
-import cn.denvie.elasticsearchspider.es.model.QueryType;
-import cn.denvie.elasticsearchspider.es.model.SearchField;
-import cn.denvie.elasticsearchspider.es.model.SearchParam;
+import cn.denvie.elasticsearchspider.es.model.*;
 import cn.denvie.elasticsearchspider.es.service.ElasticsearchService;
+import cn.denvie.elasticsearchspider.es.utils.SearchParamBuilder;
 import cn.denvie.elasticsearchspider.spider.domain.JdGoods;
 import cn.denvie.elasticsearchspider.spider.service.impl.JdGoodsParseService;
+import com.google.common.base.Splitter;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,15 +28,15 @@ import java.util.Map;
  */
 @RestController
 public class ElasticSearchController {
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
     private ElasticsearchService elasticSearchService;
-
     @Autowired
     private JdGoodsParseService jdGoodsParseService;
 
     /**
-     * 创建索引。
+     * 创建京东商品索引。
      *
      * @param index 索引名称
      * @return true: 创建成功；false: 创建失败
@@ -69,14 +74,59 @@ public class ElasticSearchController {
         return jdGoodsList;
     }
 
+    // http://localhost:8080/searchJdGoods?field=title, shop&keyword=广东人民出版社&pageNo=1&pageSize=5
     @GetMapping("/searchJdGoods")
-    public PagingResult<JdGoods> searchJdGoods(String keyword, int pageNo, int pageSize) throws IOException {
-        SearchParam searchParam = new SearchParam.Builder()
-                .searchField(new SearchField("title", keyword, QueryType.MATCH))
+    public PagingResult<JdGoods> searchJdGoods(String field, String keyword, int pageNo, int pageSize)
+            throws IOException {
+        QueryType queryType = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(field).size() > 1
+                ? QueryType.MULTI_MATCH : QueryType.MATCH;
+        SingleSearchParam searchParam = new SearchParamBuilder()
+                .searchField(new SearchField(field, keyword, queryType, null))
                 .pageNo(pageNo)
                 .pageSize(pageSize)
-                .build();
+                .buildSingleSearchParam();
         return elasticSearchService.search("jd-goods", searchParam, JdGoods.class);
+    }
+
+    // http://localhost:8080/boolSearchJdGoods?title=连衣裙&shop=服饰专营店&startTime=2020-08-07 12:12:12&endTime=2020-08-08 12:12:12&pageNo=1&pageSize=5
+    @GetMapping("/boolSearchJdGoods")
+    public PagingResult<JdGoods> boolSearchJdGoods(@RequestParam Map<String, String> params)
+            throws IOException {
+        SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
+                .pageNo(NumberUtils.toInt(params.get("pageNo"), 1))
+                .pageSize(NumberUtils.toInt(params.get("pageSize"), 10));
+        if (StringUtils.isNoneBlank(params.get("title"))) {
+            searchParamBuilder.searchField("title", params.get("title"),
+                    QueryType.MATCH, QueryType.BOOL_MUST);
+        }
+        if (StringUtils.isNoneBlank(params.get("shop"))) {
+            searchParamBuilder.searchField("shop", params.get("shop"),
+                    QueryType.MATCH, QueryType.BOOL_MUST);
+        }
+        if (StringUtils.isNoneBlank(params.get("startTime"))) {
+            try {
+                Date startTime = sdf.parse(params.get("startTime"));
+                RangeValue value = new RangeValue();
+                value.gte(startTime);
+                searchParamBuilder.searchField("createTime", value,
+                        QueryType.RANGE, QueryType.BOOL_MUST);
+            } catch (ParseException e) {
+                // ignore
+            }
+        }
+        if (StringUtils.isNoneBlank(params.get("endTime"))) {
+            try {
+                Date endTime = sdf.parse(params.get("endTime"));
+                RangeValue value = new RangeValue();
+                value.lte(endTime);
+                searchParamBuilder.searchField("createTime", value,
+                        QueryType.RANGE, QueryType.BOOL_MUST);
+            } catch (ParseException e) {
+                // ignore
+            }
+        }
+        MultiSearchParam searchParam = searchParamBuilder.buildMultiSearchParam();
+        return elasticSearchService.boolSearch("jd-goods", searchParam, JdGoods.class);
     }
 
 }
