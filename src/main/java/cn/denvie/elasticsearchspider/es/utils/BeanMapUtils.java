@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.es.utils;
 
 import com.google.common.collect.Lists;
@@ -11,7 +15,7 @@ import java.util.Map;
  * Bean和Map互相转换工具类。
  *
  * @author denvie
- * @date 2020/8/4
+ * @since 2020/8/4
  */
 public class BeanMapUtils {
     /**

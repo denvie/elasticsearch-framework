@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.es.utils;
 
 import cn.denvie.elasticsearchspider.es.model.*;
@@ -9,7 +13,7 @@ import java.util.List;
  * 搜索参数构造器。
  *
  * @author denvie
- * @date 2020/8/8
+ * @since 2020/8/8
  */
 public class SearchParamBuilder {
     private List<SearchField> searchFieldList = new ArrayList<>();

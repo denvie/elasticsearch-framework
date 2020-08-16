@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.spider.domain;
 
 import cn.denvie.elasticsearchspider.es.model.EsIndexBean;
@@ -14,7 +18,7 @@ import java.util.UUID;
 
 /**
  * @author denvie
- * @date 2020/8/4
+ * @since 2020/8/4
  */
 @Data
 @NoArgsConstructor

@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.spider.service.impl;
 
 import cn.denvie.elasticsearchspider.spider.domain.JdGoods;
@@ -19,7 +23,7 @@ import java.util.List;
  * 京东商品解析服务。
  *
  * @author denvie
- * @date 2020/8/4
+ * @since 2020/8/4
  */
 @Service
 public class JdGoodsParseService implements HtmlParseService<List<JdGoods>> {

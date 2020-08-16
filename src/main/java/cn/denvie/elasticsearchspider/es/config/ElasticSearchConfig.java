@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.es.config;
 
 import org.apache.http.HttpHost;
@@ -12,7 +16,7 @@ import java.util.List;
 
 /**
  * @author denvie
- * @date 2020/8/4
+ * @since 2020/8/4
  */
 @Configuration
 public class ElasticSearchConfig {

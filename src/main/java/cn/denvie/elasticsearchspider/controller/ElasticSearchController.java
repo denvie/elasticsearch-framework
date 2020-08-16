@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.controller;
 
 import cn.denvie.elasticsearchspider.es.model.*;
@@ -24,7 +28,7 @@ import java.util.Map;
 
 /**
  * @author denvie
- * @date 2020/8/4
+ * @since 2020/8/4
  */
 @RestController
 public class ElasticSearchController {

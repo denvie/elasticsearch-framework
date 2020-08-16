@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.es.utils;
 
 import java.util.HashMap;
@@ -7,7 +11,7 @@ import java.util.Map;
  * 索引设置构造器。
  *
  * @author denvie
- * @date 2020/8/8
+ * @since 2020/8/8
  */
 public class SettingBuilder {
     private Map<String, String> settings;

@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.es.model;
 
 import lombok.AllArgsConstructor;
@@ -10,16 +14,14 @@ import java.util.List;
  * 分页结果。
  *
  * @author denvie
- * @date 2020/8/7
+ * @since 2020/8/7
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class PagingResult<T> {
-
     private long total;
     private List<T> dataList;
     private int pageNo;
     private int pageSize;
-
 }

@@ -3,7 +3,7 @@
 
 
 #### 依赖组件
-* [Spring Boot](https://spring.io/projects/spring-boot/) 2.3.2
+* [Spring Boot](https://spring.io/projects/spring-boot/) 2.3.3
 * [ElasticSearch](https://www.elastic.co/cn/elasticsearch/) 7.6.2
 * [Guava](https://github.com/google/guava/) 28.2-jre
 * [Commons Lang](http://commons.apache.org/proper/commons-lang/) 3.11

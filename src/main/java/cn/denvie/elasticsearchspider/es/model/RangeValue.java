@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.es.model;
 
 import org.apache.commons.lang3.math.NumberUtils;
@@ -9,7 +13,7 @@ import java.util.HashMap;
  * 封装范围查询的值。
  *
  * @author denvie
- * @date 2020/8/4
+ * @since 2020/8/4
  */
 public class RangeValue extends HashMap<String, Object> {
 

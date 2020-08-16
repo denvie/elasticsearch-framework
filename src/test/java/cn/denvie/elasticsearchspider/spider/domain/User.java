@@ -1,3 +1,7 @@
+/*
+ * Copyright © 2020-2020 尛飛俠（Denvie） All rights reserved.
+ */
+
 package cn.denvie.elasticsearchspider.spider.domain;
 
 import lombok.AllArgsConstructor;
@@ -10,10 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-
     private int id;
     private String name;
     private int age;
     private List<String> tags;
-
 }
