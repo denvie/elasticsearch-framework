@@ -1,5 +1,5 @@
 ## 介绍
-使用JSoup爬取数据，并整合ElasticSearch进行数据存储与检索。
+使用JSoup爬取数据，并整合Elasticsearch进行数据存储与检索。
 
 
 #### 依赖组件
