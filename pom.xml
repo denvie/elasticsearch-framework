@@ -3,6 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>2.3.3.RELEASE</version>
+    </parent>
+
     <groupId>cn.denvie</groupId>
     <artifactId>elasticsearch-spider</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -10,9 +16,22 @@
     <name>elasticsearch-spider</name>
     <description>ElasticSearch Spider</description>
 
+    <properties>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <elasticsearch.version>7.6.2</elasticsearch.version>
+        <jsoup.version>1.13.1</jsoup.version>
+        <guava.version>28.2-jre</guava.version>
+    </properties>
+
     <modules>
-        <module>elasticsearch</module>
-        <module>spider</module>
+        <module>elasticsearch-core</module>
+        <module>elasticsearch-spring-boot-autoconfigure</module>
+        <module>elasticsearch-spring-boot-starter</module>
+        <module>jsoup-spider</module>
     </modules>
 
 </project>
