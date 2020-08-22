@@ -46,31 +46,31 @@ public class TestService {
     public void testService() {
         String index = "user-index";
         // 创建索引
-		elasticSearchService.createIndex(index);
+        elasticSearchService.createIndex(index);
         // 保存文档
         User user = new User("Denvie", 18, "户外运动，打篮球");
-		elasticSearchService.saveDocument(index, User);
+        elasticSearchService.saveDocument(index, User);
         // 单项搜索，比如 match, multi_match、term、range 等
-        SingleSearchParam searchParam = new SearchParamBuilder()
+        SingleSearchParam singleSearchParam = new SearchParamBuilder()
                 .searchField(new SearchField("name,hobbies", "Denvie户外", QueryType.MULTI_MATCH, null))
-        		.orderField(new OrderField("age", true))
-        		.highlightPreTags("<span style='color: read;'>")
-        		.highlightPostTags("</span")
+                .orderField(new OrderField("age", true))
+                .highlightPreTags("<span style='color: read;'>")
+                .highlightPostTags("</span")
                 .pageNo(1)
                 .pageSize(10)
                 .buildSingleSearchParam();
-        elasticSearchService.searchDocuments(index, searchParam, User.class);
+        elasticSearchService.searchDocuments(index, singleSearchParam, User.class);
         // bool搜索
-        SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
-            	.searchField("name", "Denvie", QueryType.MATCH, QueryType.BOOL_MUST)
-            	.searchField("hobbies", "户外", QueryType.MATCH, QueryType.BOOL_MUST);
+        SearchParamBuilder multiSearchParamBuilder = new SearchParamBuilder()
+                .searchField("name", "Denvie", QueryType.MATCH, QueryType.BOOL_MUST)
+                .searchField("hobbies", "户外", QueryType.MATCH, QueryType.BOOL_MUST);
         RangeValue rangeValue = new RangeValue();
         rangeValue.gte(15);
         rangeValue.lte(25);
-        searchParamBuilder.searchField("age", rangeValue, QueryType.RANGE, QueryType.BOOL_MUST);
-        searchField.pageNo(1).pageSize(10);
-        MultiSearchParam searchParam = searchParamBuilder.buildMultiSearchParam();
-        elasticSearchService.boolSearchDocuments(index, searchParam, User.class);
+        multiSearchParamBuilder.searchField("age", rangeValue, QueryType.RANGE, QueryType.BOOL_MUST);
+        multiSearchParamBuilder.pageNo(1).pageSize(10);
+        MultiSearchParam multiSearchParam = multiSearchParamBuilder.buildMultiSearchParam();
+        elasticSearchService.boolSearchDocuments(index, multiSearchParam, User.class);
         // ...
     }
 }
