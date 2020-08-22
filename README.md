@@ -1,16 +1,16 @@
-# 介绍
+# 简介
 封装Elasticsearch简易操作框架**elasticsearch-core**，使用JSoup爬取数据，并整合**elasticsearch-core**进行数据存储与检索。
 
 
 
-### 依赖组件
+## 依赖组件
 * [Spring Boot](https://spring.io/projects/spring-boot/) 2.3.3
 * [ElasticSearch](https://www.elastic.co/cn/elasticsearch/) 7.6.2
 * [Guava](https://github.com/google/guava/) 28.2-jre
 
 
 
-### SpringBoot整合elasticsearch-core
+## SpringBoot整合elasticsearch-core
 
 - 在**pom.xml**中添加starter依赖
 
@@ -51,7 +51,8 @@ public class TestService {
         elasticSearchService.saveDocument(index, User);
         // 单项搜索，比如 match, multi_match、term、range 等
         SingleSearchParam singleSearchParam = new SearchParamBuilder()
-                .searchField(new SearchField("name,hobbies", "Denvie户外", QueryType.MULTI_MATCH, null))
+                .searchField(new SearchField("name", "Denvie", QueryType.MATCH, null))
+                //.searchField(new SearchField("name,hobbies", "Denvie户外", QueryType.MULTI_MATCH, null))
                 .orderField(new OrderField("age", true))
                 .highlightPreTags("<span style='color: read;'>")
                 .highlightPostTags("</span")
@@ -77,7 +78,7 @@ public class TestService {
 
 
 
-#### JSoup爬虫接口
+## jsoup-spider接口
 
 * 爬取京东商品：
     http://localhost:8080/crawlJdGoods?keyword=java&pageNo=1
@@ -87,3 +88,139 @@ public class TestService {
     http://localhost:8080/searchJdGoods?field=title,shop&keyword=java&pageNo=1&pageSize=5
 * 多条件搜索：
     http://localhost:8080/boolSearchJdGoods?title=java&shop=yyy&startTime=2020-08-07 12:12:12&endTime=2020-08-08 12:12:12&pageNo=1&pageSize=5
+
+
+
+## 自定义spring-boot-starter步骤
+
+1. 新建xxx-spring-boot-autoconfigure模块
+
+   1. 新建XxxAutoConfiguration自动配置类及XxxProperties属性配置类，例如：
+
+      ```java
+      @Configuration(proxyBeanMethods = false)
+      @EnableConfigurationProperties(ElasticsearchProperties.class)
+      public class ElasticsearchAutoConfiguration {
+      
+          @Bean
+          @ConditionalOnMissingBean
+          public RestHighLevelClient restHighLevelClient(ElasticsearchProperties properties) {
+              HttpHost[] httpHosts = new HttpHost[properties.getHosts().size()];
+              for (int i = 0; i < properties.getHosts().size(); i++) {
+                  String[] splits = properties.getHosts().get(i).split(":");
+                  httpHosts[i] = new HttpHost(splits[0].trim(),
+                          Integer.parseInt(splits[1].trim()), properties.getScheme());
+              }
+              return new RestHighLevelClient(RestClient.builder(httpHosts));
+          }
+      
+          @Bean
+          @ConditionalOnMissingBean
+          public ElasticsearchService elasticsearchService(RestHighLevelClient restHighLevelClient,
+                                                           ElasticsearchProperties properties) {
+              ElasticsearchService elasticsearchService = new ElasticsearchServiceImpl(
+                      restHighLevelClient, properties.getTimeoutSeconds());
+              return elasticsearchService;
+          }
+      }
+      ```
+
+      ```java
+      @Data
+      @ConfigurationProperties(prefix = "elasticsearch")
+      public class ElasticsearchProperties {
+          /**
+           * Elasticsearch主机，多个以","分隔
+           */
+          private List<String> hosts = Collections.singletonList("localhost:9200");
+          /**
+           * 连接协议
+           */
+          private String scheme = "http";
+          /**
+           * 超时时间（秒）
+           */
+          private int timeoutSeconds = 30;
+      }
+      ```
+
+      
+
+   2. 在**resources**资源文件夹下新建**META-INF/spring.factories**，内容如下：
+
+      ```properties
+      # Auto Configure
+      org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+      your.package.XxxAutoConfiguration
+      ```
+
+      
+
+   3. **pom.xml**配置文件中，除了依赖自己的服务jar包之外，还需要添加以下依赖，注意需要配置为使用**maven-jar-plugin**进行打包：
+
+      ```xml
+      <dependencies>     
+          <dependency>
+              <groupId>your.groupId</groupId>
+              <artifactId>your.business.artifactId</artifactId>
+              <version>1.0.0-SNAPSHOT</version>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-autoconfigure</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-autoconfigure-processor</artifactId>
+              <optional>true</optional>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-configuration-processor</artifactId>
+              <optional>true</optional>
+          </dependency>
+      </dependencies>
+      <build>
+          <plugins>
+              <!-- 注意：这里要使用Apache Maven打成普通Jar包 -->
+              <plugin>
+                  <groupId>org.apache.maven.plugins</groupId>
+                  <artifactId>maven-jar-plugin</artifactId>
+              </plugin>
+          </plugins>
+      </build>
+      ```
+
+      
+
+2. 新建xxx-spring-boot-starter模块
+
+这个模块只需要一个**pom.xml**把xxx-spring-boot-autoconfigure依赖进来就可以了，这里也需要使用**maven-jar-plugin**进行打包，比如：
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>cn.denvie</groupId>
+        <artifactId>elasticsearch-spring-boot-autoconfigure</artifactId>
+        <version>${parent.version}</version>
+    </dependency>
+</dependencies>
+<build>
+    <plugins>
+        <!-- 注意：这里要使用Apache Maven打成普通Jar包 -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+        </plugin>
+    </plugins>
+</build>
+```
+
+      
+
+3. 其他项目中直接依赖xxx-spring-boot-starter，配置需要的属性即可
+

@@ -7,7 +7,7 @@
     <parent>
         <groupId>cn.denvie</groupId>
         <artifactId>elasticsearch-spider</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>elasticsearch-spring-boot-autoconfigure</artifactId>
@@ -34,5 +34,15 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 注意：这里要使用Apache Maven打成普通Jar包 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
