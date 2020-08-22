@@ -16,6 +16,14 @@
     <name>elasticsearch-spider</name>
     <description>ElasticSearch Spider</description>
 
+    <developers>
+        <developer>
+            <name>Denvie</name>
+            <email>7382763@qq.com</email>
+            <url>http://www.denvie.cn</url>
+        </developer>
+    </developers>
+
     <properties>
         <java.version>1.8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
