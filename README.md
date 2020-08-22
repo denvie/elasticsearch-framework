@@ -1,16 +1,16 @@
-## 介绍
+# 介绍
 封装Elasticsearch简易操作框架**elasticsearch-core**，使用JSoup爬取数据，并整合**elasticsearch-core**进行数据存储与检索。
 
 
 
-#### 依赖组件
+### 依赖组件
 * [Spring Boot](https://spring.io/projects/spring-boot/) 2.3.3
 * [ElasticSearch](https://www.elastic.co/cn/elasticsearch/) 7.6.2
 * [Guava](https://github.com/google/guava/) 28.2-jre
 
 
 
-#### SpringBoot整合elasticsearch-core
+### SpringBoot整合elasticsearch-core
 
 - 在**pom.xml**中添加starter依赖
 
@@ -37,7 +37,6 @@ elasticsearch:
 import cn.denvie.elasticsearch.model.*;
 import cn.denvie.elasticsearch.service.ElasticsearchService;
 import cn.denvie.elasticsearch.utils.SearchParamBuilder;
-import cn.denvie.elasticsearch.utils.SettingBuilder;
 
 public class TestService {
     @Autowired
