@@ -10,11 +10,19 @@ import cn.denvie.elasticsearch.utils.BeanMapUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
@@ -23,7 +31,9 @@ import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -43,13 +53,13 @@ import java.util.Map;
  * @since 2020/8/4
  */
 public class ElasticsearchServiceImpl implements ElasticsearchService {
-    private RestHighLevelClient restHighLevelClient;
-    private int timeoutSeconds = 30;
-    private ObjectMapper objectMapper;
+    private final RestHighLevelClient restHighLevelClient;
+    private final int timeoutSeconds;
+    private final ObjectMapper objectMapper;
 
     public ElasticsearchServiceImpl(RestHighLevelClient restHighLevelClient, int timeoutSeconds) {
         this.restHighLevelClient = restHighLevelClient;
-        this.timeoutSeconds = timeoutSeconds;
+        this.timeoutSeconds = timeoutSeconds <= 0 ? 30 : timeoutSeconds;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -94,13 +104,20 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     @Override
-    public boolean save(String index, EsIndexBean... sources) throws IOException {
+    public boolean deleteIndex(String index) throws IOException {
+        DeleteIndexRequest request = new DeleteIndexRequest(index);
+        AcknowledgedResponse response = restHighLevelClient.indices().delete(request, RequestOptions.DEFAULT);
+        return response.isAcknowledged();
+    }
+
+    @Override
+    public boolean saveDocument(String index, EsIndexBean... sources) throws IOException {
         if (sources == null || sources.length == 0) {
             return false;
         }
+        // 批处理请求
         BulkRequest request = new BulkRequest();
         request.timeout(TimeValue.timeValueSeconds(timeoutSeconds));
-        // 批处理请求
         for (EsIndexBean source : sources) {
             request.add(new IndexRequest(index)
                     .id(source.getEsIndexId())
@@ -111,7 +128,29 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     @Override
-    public <T> PagingResult<T> searchAll(String indexes, AbstractSearchParam searchParam, Class<T> beanClass)
+    public <T> T getDocument(String index, String id, Class<T> docClass) throws IOException {
+        GetRequest request = new GetRequest(index, id);
+        GetResponse response = restHighLevelClient.get(request, RequestOptions.DEFAULT);
+        return BeanMapUtils.mapToBean(response.getSourceAsMap(), docClass);
+    }
+
+    @Override
+    public boolean updateDocument(String index, String id, EsIndexBean source) throws IOException {
+        UpdateRequest request = new UpdateRequest(index, id);
+        request.doc(objectMapper.writeValueAsString(source), XContentType.JSON);
+        UpdateResponse response = restHighLevelClient.update(request, RequestOptions.DEFAULT);
+        return response.status() == RestStatus.OK;
+    }
+
+    @Override
+    public boolean deleteDocument(String index, String id) throws IOException {
+        DeleteRequest request = new DeleteRequest(index, id);
+        DeleteResponse response = restHighLevelClient.delete(request, RequestOptions.DEFAULT);
+        return response.status() == RestStatus.OK;
+    }
+
+    @Override
+    public <T> PagingResult<T> searchAllDocuments(String indexes, AbstractSearchParam searchParam, Class<T> docClass)
             throws IOException {
         SearchRequest request = new SearchRequest(indexes);
         SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -122,14 +161,14 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         }
         // 执行搜索
         request.source(builder);
-        return commitSearch(request, searchParam, beanClass);
+        return commitSearch(request, searchParam, docClass);
     }
 
     @Override
-    public <T> PagingResult<T> search(String indexes, SingleSearchParam searchParam, Class<T> beanClass)
+    public <T> PagingResult<T> searchDocuments(String indexes, SingleSearchParam searchParam, Class<T> docClass)
             throws IOException {
         if (searchParam == null || searchParam.getSearchField() == null) {
-            return searchAll(indexes, searchParam, beanClass);
+            return searchAllDocuments(indexes, searchParam, docClass);
         }
         SearchRequest request = new SearchRequest(indexes);
         SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -140,15 +179,15 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         setupSearchBuilder(builder, searchParam);
         // 执行搜索
         request.source(builder);
-        return commitSearch(request, searchParam, beanClass);
+        return commitSearch(request, searchParam, docClass);
     }
 
     @Override
-    public <T> PagingResult<T> boolSearch(String indexes, MultiSearchParam searchParam,
-                                          Class<T> beanClass) throws IOException {
+    public <T> PagingResult<T> boolSearchDocuments(String indexes, MultiSearchParam searchParam,
+                                                   Class<T> docClass) throws IOException {
         if (searchParam == null || searchParam.getSearchFieldList() == null
                 || searchParam.getSearchFieldList().isEmpty()) {
-            return searchAll(indexes, searchParam, beanClass);
+            return searchAllDocuments(indexes, searchParam, docClass);
         }
         SearchRequest request = new SearchRequest(indexes);
         SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -170,8 +209,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                     boolQueryBuilder.filter(castSearchType(field));
                     break;
                 default:
-                    throw new RuntimeException("not supported query type: "
-                            + field.getQueryType().getQueryName());
+                    throw new RuntimeException("not supported query type: " + field.getQueryType().getQueryName());
             }
         }
         builder.query(boolQueryBuilder);
@@ -179,7 +217,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         setupSearchBuilder(builder, searchParam);
         // 执行搜索
         request.source(builder);
-        return commitSearch(request, searchParam, beanClass);
+        return commitSearch(request, searchParam, docClass);
     }
 
     private QueryBuilder castSearchType(SearchField searchField) {
@@ -248,7 +286,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     private <T> PagingResult<T> commitSearch(SearchRequest request, AbstractSearchParam searchParam,
-                                             Class<T> beanClass) throws IOException {
+                                             Class<T> docClass) throws IOException {
         SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
         SearchHits hits = response.getHits();
         List<T> result = new ArrayList<>();
@@ -256,9 +294,9 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
             Map<String, Object> sourceAsMap = resolveHighlightField(hit, searchParam.getHighlightField(),
                     searchParam.getHighlightPreTags(), searchParam.getHighlightPostTags());
             try {
-                result.add(BeanMapUtils.mapToBean(sourceAsMap, beanClass.newInstance()));
+                result.add(BeanMapUtils.mapToBean(sourceAsMap, docClass));
             } catch (Exception e) {
-                result.add(objectMapper.readValue(objectMapper.writeValueAsString(sourceAsMap), beanClass));
+                result.add(objectMapper.readValue(objectMapper.writeValueAsString(sourceAsMap), docClass));
             }
         }
         return new PagingResult<>(hits.getTotalHits().value, result,

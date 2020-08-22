@@ -6,8 +6,11 @@ package cn.denvie.elasticsearch.utils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.springframework.cglib.beans.BeanMap;
+import org.apache.commons.beanutils.BeanMap;
+import org.apache.commons.beanutils.BeanUtils;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,28 +29,40 @@ public class BeanMapUtils {
      * @return Map<String, Object>
      */
     public static <T> Map<String, Object> beanToMap(T bean) {
-        Map<String, Object> map = Maps.newHashMap();
-        if (bean != null) {
-            BeanMap beanMap = BeanMap.create(bean);
-            for (Object key : beanMap.keySet()) {
-                map.put(key + "", beanMap.get(key));
-            }
+        if (bean == null) {
+            return Maps.newHashMap();
         }
-        return map;
+        BeanMap beanMap = new BeanMap(bean);
+        HashMap<String, Object> properties = new HashMap<>();
+        beanMap.forEach((key, value) -> {
+            String stringKey = String.valueOf(key);
+            if (!"null".equalsIgnoreCase(stringKey) && !"class".equalsIgnoreCase(stringKey)) {
+                properties.put(stringKey, value);
+            }
+        });
+        return properties;
     }
 
     /**
      * 将Map装换为Bean对象。
      *
-     * @param map  Map
-     * @param bean Bean实例
-     * @param <T>  Bean的类型
+     * @param properties 属性Map
+     * @param clazz      Bean实例
+     * @param <T>        Bean的类型
      * @return Bean
      */
-    public static <T> T mapToBean(Map<String, Object> map, T bean) {
-        BeanMap beanMap = BeanMap.create(bean);
-        beanMap.putAll(map);
-        return bean;
+    public static <T> T mapToBean(Map<String, Object> properties, Class<T> clazz) {
+        if (properties == null || clazz == null) {
+            return null;
+        }
+        T instance = null;
+        try {
+            instance = clazz.newInstance();
+            BeanUtils.populate(instance, properties);
+        } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
+            e.printStackTrace();
+        }
+        return instance;
     }
 
     /**
@@ -60,12 +75,8 @@ public class BeanMapUtils {
     public static <T> List<Map<String, Object>> objectsToMaps(List<T> objList) {
         List<Map<String, Object>> list = Lists.newArrayList();
         if (objList != null && objList.size() > 0) {
-            Map<String, Object> map;
-            T bean = null;
             for (int i = 0, size = objList.size(); i < size; i++) {
-                bean = objList.get(i);
-                map = beanToMap(bean);
-                list.add(map);
+                list.add(beanToMap(objList.get(i)));
             }
         }
         return list;
@@ -77,21 +88,15 @@ public class BeanMapUtils {
      * @param maps  Map列表
      * @param clazz Bean的Clazz对象
      * @param <T>   Bean的类型
-     * @return Bean列表
-     * @throws InstantiationException InstantiationException
-     * @throws IllegalAccessException IllegalAccessException
+     * @return Bean实例列表
      */
-    public static <T> List<T> mapsToObjects(List<Map<String, Object>> maps, Class<T> clazz)
-            throws InstantiationException, IllegalAccessException {
+    public static <T> List<T> mapsToObjects(List<Map<String, Object>> maps, Class<T> clazz) {
         List<T> list = Lists.newArrayList();
         if (maps != null && maps.size() > 0) {
             Map<String, Object> map;
-            T bean;
             for (int i = 0, size = maps.size(); i < size; i++) {
                 map = maps.get(i);
-                bean = clazz.newInstance();
-                mapToBean(map, bean);
-                list.add(bean);
+                list.add(mapToBean(map, clazz));
             }
         }
         return list;

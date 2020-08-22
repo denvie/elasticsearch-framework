@@ -26,11 +26,11 @@ public interface ElasticsearchService {
     boolean createIndex(String index) throws IOException;
 
     /**
-     * 使用指定的settings和mapping创建索引。
+     * 使用指定的索引设置和字段映射创建索引。
      *
      * @param index    索引名称
-     * @param settings 配置
-     * @param mappings 映射
+     * @param settings 索引设置
+     * @param mappings 字段映射
      * @return true: 创建成功；false: 创建失败
      * @throws IOException IOException
      */
@@ -38,7 +38,7 @@ public interface ElasticsearchService {
                         Map<String, Map<String, Object>> mappings) throws IOException;
 
     /**
-     * 获取索引是否已存在。
+     * 索引是否已存在。
      *
      * @param index 索引名称
      * @return true: 已存在；false: 不存在
@@ -47,26 +47,68 @@ public interface ElasticsearchService {
     boolean isIndexExists(String index) throws IOException;
 
     /**
+     * 删除索引。
+     *
+     * @param index 索引名称
+     * @return true: 删除成功；false: 删除失败
+     * @throws IOException IOException
+     */
+    boolean deleteIndex(String index) throws IOException;
+
+    /**
      * 保存文档。
      *
-     * @param indexes 索引名称
-     * @param sources 文档对象
+     * @param index   索引名称
+     * @param sources 文档实例
      * @return true: 保存成功；false: 保存失败
      * @throws IOException IOException
      */
-    boolean save(String indexes, EsIndexBean... sources) throws IOException;
+    boolean saveDocument(String index, EsIndexBean... sources) throws IOException;
+
+    /**
+     * 获取文档。
+     *
+     * @param index    索引名称
+     * @param id       文档id
+     * @param docClass 文档类型Class
+     * @param <T>      文档类型
+     * @return 文档实例
+     * @throws IOException IOException
+     */
+    <T> T getDocument(String index, String id, Class<T> docClass) throws IOException;
+
+    /**
+     * 更新文档。
+     *
+     * @param index  索引名称
+     * @param id     文档id
+     * @param source 文档实例
+     * @return true: 更新成功；false: 更新失败
+     * @throws IOException IOException
+     */
+    boolean updateDocument(String index, String id, EsIndexBean source) throws IOException;
+
+    /**
+     * 删除文档。
+     *
+     * @param index 索引名称
+     * @param id    文档id
+     * @return true: 删除成功；false: 删除失败
+     * @throws IOException IOException
+     */
+    boolean deleteDocument(String index, String id) throws IOException;
 
     /**
      * 搜索所有文档。
      *
      * @param indexes     索引名称
      * @param searchParam 搜索参数
-     * @param beanClass   文档类型Class
+     * @param docClass    文档类型Class
      * @param <T>         结果实体类型
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> PagingResult<T> searchAll(String indexes, AbstractSearchParam searchParam, Class<T> beanClass)
+    <T> PagingResult<T> searchAllDocuments(String indexes, AbstractSearchParam searchParam, Class<T> docClass)
             throws IOException;
 
     /**
@@ -74,12 +116,12 @@ public interface ElasticsearchService {
      *
      * @param indexes     索引名称
      * @param searchParam 搜索参数
-     * @param beanClass   文档类型Class
+     * @param docClass    文档类型Class
      * @param <T>         结果实体类型
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> PagingResult<T> search(String indexes, SingleSearchParam searchParam, Class<T> beanClass)
+    <T> PagingResult<T> searchDocuments(String indexes, SingleSearchParam searchParam, Class<T> docClass)
             throws IOException;
 
     /**
@@ -87,11 +129,11 @@ public interface ElasticsearchService {
      *
      * @param indexes     索引名称
      * @param searchParam 搜索参数
-     * @param beanClass   文档类型Class
+     * @param docClass    文档类型Class
      * @param <T>         结果实体类型
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> PagingResult<T> boolSearch(String indexes, MultiSearchParam searchParam, Class<T> beanClass)
+    <T> PagingResult<T> boolSearchDocuments(String indexes, MultiSearchParam searchParam, Class<T> docClass)
             throws IOException;
 }

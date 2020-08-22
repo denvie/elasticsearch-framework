@@ -77,7 +77,7 @@ public class ElasticsearchController {
         String url = String.format("https://search.jd.com/Search?keyword=%s&page=%d", keyword, pageNo);
         List<JdGoods> jdGoodsList = jdGoodsParseService.parse(url);
         // 存入ElasticSearch
-        elasticSearchService.save("jd-goods", jdGoodsList.toArray(new JdGoods[]{}));
+        elasticSearchService.saveDocument("jd-goods", jdGoodsList.toArray(new JdGoods[]{}));
         return jdGoodsList;
     }
 
@@ -91,7 +91,7 @@ public class ElasticsearchController {
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .buildSingleSearchParam();
-        return elasticSearchService.search("jd-goods", searchParam, JdGoods.class);
+        return elasticSearchService.searchDocuments("jd-goods", searchParam, JdGoods.class);
     }
 
     @GetMapping("/boolSearchJdGoods")
@@ -131,6 +131,6 @@ public class ElasticsearchController {
             }
         }
         MultiSearchParam searchParam = searchParamBuilder.buildMultiSearchParam();
-        return elasticSearchService.boolSearch("jd-goods", searchParam, JdGoods.class);
+        return elasticSearchService.boolSearchDocuments("jd-goods", searchParam, JdGoods.class);
     }
 }

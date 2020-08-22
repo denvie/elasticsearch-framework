@@ -142,7 +142,7 @@ public class ElasticsearchApiTests {
     @Ignore
     @Test
     public void updateDocument() throws IOException {
-        User user = new User(1, "尛飛俠", 33,
+        User user = new User(1, "尛飛俠", 18,
                 Arrays.asList("技术宅男", "户外强驴", "旅游达人"));
         UpdateRequest request = new UpdateRequest(index, "1");
         request.doc(objectMapper.writeValueAsString(user), XContentType.JSON);
@@ -189,7 +189,7 @@ public class ElasticsearchApiTests {
         TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("name", "俠");
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.must().add(QueryBuilders.matchQuery("name", "尛飛俠"));
-        boolQueryBuilder.mustNot().add(QueryBuilders.termQuery("age", 25));
+        boolQueryBuilder.mustNot().add(QueryBuilders.termQuery("age", 20));
         builder.query(boolQueryBuilder)
                 .timeout(TimeValue.timeValueSeconds(10))
                 .from(0)
