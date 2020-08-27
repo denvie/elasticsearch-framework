@@ -10,7 +10,7 @@ package cn.denvie.elasticsearch.model;
  * @author denvie
  * @since 2020/8/4
  */
-public enum QueryType {
+public enum SearchType {
     /**
      * 匹配搜索
      */
@@ -47,7 +47,7 @@ public enum QueryType {
     private int code;
     private String queryName;
 
-    QueryType(int code, String queryName) {
+    SearchType(int code, String queryName) {
         this.code = code;
         this.queryName = queryName;
     }

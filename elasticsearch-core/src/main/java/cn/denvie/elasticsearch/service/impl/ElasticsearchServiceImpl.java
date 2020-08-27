@@ -35,7 +35,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
@@ -150,7 +150,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     @Override
-    public <T> PagingResult<T> searchAllDocuments(String indexes, AbstractSearchParam searchParam, Class<T> docClass)
+    public <T> SearchResult<T> searchAllDocuments(String indexes, AbstractSearchParam searchParam, Class<T> docClass)
             throws IOException {
         SearchRequest request = new SearchRequest(indexes);
         SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -165,7 +165,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     @Override
-    public <T> PagingResult<T> searchDocuments(String indexes, SingleSearchParam searchParam, Class<T> docClass)
+    public <T> SearchResult<T> searchDocuments(String indexes, SingleSearchParam searchParam, Class<T> docClass)
             throws IOException {
         if (searchParam == null || searchParam.getSearchField() == null) {
             return searchAllDocuments(indexes, searchParam, docClass);
@@ -174,7 +174,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         SearchSourceBuilder builder = new SearchSourceBuilder();
         SearchField searchField = searchParam.getSearchField();
         // 匹配搜索类型，如：match, multi_match, term, range
-        builder.query(castSearchType(searchField));
+        builder.query(getSearchType(searchField));
         // 设置搜索参数
         setupSearchBuilder(builder, searchParam);
         // 执行搜索
@@ -183,7 +183,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     }
 
     @Override
-    public <T> PagingResult<T> boolSearchDocuments(String indexes, MultiSearchParam searchParam,
+    public <T> SearchResult<T> boolSearchDocuments(String indexes, MultiSearchParam searchParam,
                                                    Class<T> docClass) throws IOException {
         if (searchParam == null || searchParam.getSearchFieldList() == null
                 || searchParam.getSearchFieldList().isEmpty()) {
@@ -195,21 +195,21 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         List<SearchField> searchFieldList = searchParam.getSearchFieldList();
         for (SearchField field : searchFieldList) {
-            switch (field.getBoolType()) {
+            switch (field.getOuterSearchType()) {
                 case BOOL_MUST:
-                    boolQueryBuilder.must(castSearchType(field));
+                    boolQueryBuilder.must(getSearchType(field));
                     break;
                 case BOOL_MUST_NOT:
-                    boolQueryBuilder.mustNot(castSearchType(field));
+                    boolQueryBuilder.mustNot(getSearchType(field));
                     break;
                 case BOOL_MUST_SHOULD:
-                    boolQueryBuilder.should(castSearchType(field));
+                    boolQueryBuilder.should(getSearchType(field));
                     break;
                 case BOOL_MUST_FILTER:
-                    boolQueryBuilder.filter(castSearchType(field));
+                    boolQueryBuilder.filter(getSearchType(field));
                     break;
                 default:
-                    throw new RuntimeException("not supported query type: " + field.getQueryType().getQueryName());
+                    throw new RuntimeException("not supported query type: " + field.getSearchType().getQueryName());
             }
         }
         builder.query(boolQueryBuilder);
@@ -220,8 +220,15 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         return commitSearch(request, searchParam, docClass);
     }
 
-    private QueryBuilder castSearchType(SearchField searchField) {
-        switch (searchField.getQueryType()) {
+    private QueryBuilder getSearchType(SearchField searchField) {
+        if (searchField.isConstantScore()) {
+            return QueryBuilders.constantScoreQuery(caseQueryBuilder(searchField));
+        }
+        return caseQueryBuilder(searchField);
+    }
+
+    private QueryBuilder caseQueryBuilder(SearchField searchField) {
+        switch (searchField.getSearchType()) {
             case MATCH:
                 return QueryBuilders.matchQuery(searchField.getName(), searchField.getValue());
             case MULTI_MATCH:
@@ -240,8 +247,8 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                 ((RangeValue) searchField.getValue()).inflate(rangeQueryBuilder);
                 return rangeQueryBuilder;
             default:
-                throw new RuntimeException("not supported query type: "
-                        + searchField.getQueryType().getQueryName());
+                throw new RuntimeException("not supported search type: "
+                        + searchField.getSearchType().getQueryName());
         }
     }
 
@@ -261,8 +268,36 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
             builder.sort(searchParam.getOrderField().getName(), searchParam.getOrderField().getSortOrder());
         }
         // 设置分页参数
-        builder.from((searchParam.getPageNo() - 1) * searchParam.getPageSize());
+        if (searchParam.getPageNo() > 0) {
+            builder.from((searchParam.getPageNo() - 1) * searchParam.getPageSize());
+        }
         builder.size(searchParam.getPageSize());
+        // 设置聚合搜索项
+        if (searchParam.getAggregationBuilders() != null && searchParam.getAggregationBuilders().size() > 0) {
+            for (AggregationBuilder aggregation : searchParam.getAggregationBuilders()) {
+                builder.aggregation(aggregation);
+            }
+        }
+    }
+
+    private <T> SearchResult<T> commitSearch(SearchRequest request, AbstractSearchParam searchParam,
+                                             Class<T> docClass) throws IOException {
+        SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
+        List<T> result = null;
+        if (docClass != null) {
+            result = new ArrayList<>();
+            for (SearchHit hit : response.getHits()) {
+                Map<String, Object> sourceAsMap = resolveHighlightField(hit, searchParam.getHighlightField(),
+                        searchParam.getHighlightPreTags(), searchParam.getHighlightPostTags());
+                try {
+                    result.add(BeanMapUtils.mapToBean(sourceAsMap, docClass));
+                } catch (Exception e) {
+                    result.add(objectMapper.readValue(objectMapper.writeValueAsString(sourceAsMap), docClass));
+                }
+            }
+        }
+        return new SearchResult<>(response.getHits().getTotalHits().value, result, response,
+                searchParam.getPageNo(), searchParam.getPageSize());
     }
 
     private Map<String, Object> resolveHighlightField(SearchHit hit, SearchField highlightField,
@@ -283,23 +318,5 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
             }
         }
         return sourceAsMap;
-    }
-
-    private <T> PagingResult<T> commitSearch(SearchRequest request, AbstractSearchParam searchParam,
-                                             Class<T> docClass) throws IOException {
-        SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
-        SearchHits hits = response.getHits();
-        List<T> result = new ArrayList<>();
-        for (SearchHit hit : hits) {
-            Map<String, Object> sourceAsMap = resolveHighlightField(hit, searchParam.getHighlightField(),
-                    searchParam.getHighlightPreTags(), searchParam.getHighlightPostTags());
-            try {
-                result.add(BeanMapUtils.mapToBean(sourceAsMap, docClass));
-            } catch (Exception e) {
-                result.add(objectMapper.readValue(objectMapper.writeValueAsString(sourceAsMap), docClass));
-            }
-        }
-        return new PagingResult<>(hits.getTotalHits().value, result,
-                searchParam.getPageNo(), searchParam.getPageSize());
     }
 }

@@ -32,7 +32,7 @@ import java.util.Base64;
  * @author denvie
  * @since 2020/8/24
  */
-@Configuration(proxyBeanMethods = false)
+@Configuration
 @EnableConfigurationProperties(ElasticsearchProperties.class)
 public class ElasticsearchConfig {
     @Bean
@@ -51,8 +51,8 @@ public class ElasticsearchConfig {
 
         builder.setHttpClientConfigCallback(httpClientBuilder -> {
             // setup basic auth
-            if (StringUtils.isNoneBlank(properties.getUsername())
-                    && StringUtils.isNoneBlank(properties.getPassword())) {
+            if (StringUtils.isNotBlank(properties.getUsername())
+                    && StringUtils.isNotBlank(properties.getPassword())) {
                 String credentialsString = properties.getUsername() + ":" + properties.getPassword();
                 byte[] encodedBytes = Base64.getEncoder().encode(credentialsString.getBytes(StandardCharsets.UTF_8));
                 String headerName = "Authorization";
@@ -89,6 +89,6 @@ public class ElasticsearchConfig {
     @ConditionalOnMissingBean
     public ElasticsearchService elasticsearchService(RestHighLevelClient restHighLevelClient,
                                                      ElasticsearchProperties properties) {
-        return new ElasticsearchServiceImpl(restHighLevelClient, properties.getTimeoutSeconds());
+        return new ElasticsearchServiceImpl(restHighLevelClient, properties.getRequestTimeoutSeconds());
     }
 }

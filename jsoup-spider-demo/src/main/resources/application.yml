@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+logging:
+  level:
+    cn.denvie.elasticsearch: debug
+
+elasticsearch:
+  hosts: localhost:9200
+  scheme: http
+  requestTimeoutSeconds: 30
+  enableLogger: true

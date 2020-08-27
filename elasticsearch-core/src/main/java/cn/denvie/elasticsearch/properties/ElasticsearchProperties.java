@@ -44,7 +44,7 @@ public class ElasticsearchProperties {
     /**
      * 单个请求超时时间（秒）
      */
-    private int timeoutSeconds = 30;
+    private int requestTimeoutSeconds = 30;
     /**
      * BasicAuth: 用户名
      */
@@ -102,12 +102,12 @@ public class ElasticsearchProperties {
         this.socketTimeout = socketTimeout;
     }
 
-    public int getTimeoutSeconds() {
-        return timeoutSeconds;
+    public int getRequestTimeoutSeconds() {
+        return requestTimeoutSeconds;
     }
 
-    public void setTimeoutSeconds(int timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
+    public void setRequestTimeoutSeconds(int requestTimeoutSeconds) {
+        this.requestTimeoutSeconds = requestTimeoutSeconds;
     }
 
     public String getUsername() {

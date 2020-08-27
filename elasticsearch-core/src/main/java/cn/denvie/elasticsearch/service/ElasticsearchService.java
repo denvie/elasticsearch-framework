@@ -108,7 +108,7 @@ public interface ElasticsearchService {
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> PagingResult<T> searchAllDocuments(String indexes, AbstractSearchParam searchParam, Class<T> docClass)
+    <T> SearchResult<T> searchAllDocuments(String indexes, AbstractSearchParam searchParam, Class<T> docClass)
             throws IOException;
 
     /**
@@ -121,7 +121,7 @@ public interface ElasticsearchService {
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> PagingResult<T> searchDocuments(String indexes, SingleSearchParam searchParam, Class<T> docClass)
+    <T> SearchResult<T> searchDocuments(String indexes, SingleSearchParam searchParam, Class<T> docClass)
             throws IOException;
 
     /**
@@ -134,6 +134,6 @@ public interface ElasticsearchService {
      * @return 搜索结果列表
      * @throws IOException IOException
      */
-    <T> PagingResult<T> boolSearchDocuments(String indexes, MultiSearchParam searchParam, Class<T> docClass)
+    <T> SearchResult<T> boolSearchDocuments(String indexes, MultiSearchParam searchParam, Class<T> docClass)
             throws IOException;
 }

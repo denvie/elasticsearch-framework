@@ -4,11 +4,10 @@
 
 package cn.denvie.elasticsearch.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.*;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.protocol.HttpContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,8 +18,8 @@ import java.io.IOException;
  * @author denvie
  * @since 2020/8/24
  */
+@Slf4j
 public class HttpLoggingInterceptor implements HttpResponseInterceptor, HttpRequestInterceptor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpLoggingInterceptor.class);
     private static final String LOG_ID_ATTRIBUTE = "ES_LOG_ID_ATTRIBUTE";
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
@@ -44,11 +43,11 @@ public class HttpLoggingInterceptor implements HttpResponseInterceptor, HttpRequ
                 entityRequest.setEntity(new ByteArrayEntity(buffer.toByteArray()));
             }
 
-            LOGGER.debug("[{}] Sending request {} {} with parameters: {}{}Request body: {}",
+            log.debug("[{}] Sending request {} {} with parameters: {} {}Request body: {}",
                     logId, request.getRequestLine().getMethod().toUpperCase(), request.getRequestLine().getUri(),
                     "", LINE_SEPARATOR, new String(buffer.toByteArray()));
         } else {
-            LOGGER.debug("[{}] Sending request {} {} with parameters: {}", logId,
+            log.debug("[{}] Sending request {} {} with parameters: {}", logId,
                     request.getRequestLine().getMethod().toUpperCase(), request.getRequestLine().getUri(), "");
         }
     }
@@ -56,6 +55,6 @@ public class HttpLoggingInterceptor implements HttpResponseInterceptor, HttpRequ
     @Override
     public void process(HttpResponse response, HttpContext context) {
         String logId = (String) context.getAttribute(LOG_ID_ATTRIBUTE);
-        LOGGER.trace("[{}] Received raw response: {}", logId, response.getStatusLine().getStatusCode());
+        log.debug("[{}] Received raw response: {}", logId, response.getStatusLine().getStatusCode());
     }
 }

@@ -5,6 +5,7 @@
 package cn.denvie.elasticsearch.utils;
 
 import cn.denvie.elasticsearch.model.*;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,15 +23,16 @@ public class SearchParamBuilder {
     private String highlightPostTags;
     private int pageNo = 1;
     private int pageSize = 10;
+    private List<AggregationBuilder> aggregationBuilders;
 
     public SearchParamBuilder searchField(SearchField searchField) {
         this.searchFieldList.add(searchField);
         return this;
     }
 
-    public SearchParamBuilder searchField(String name, Object value,
-                                          QueryType queryType, QueryType boolType) {
-        this.searchFieldList.add(new SearchField(name, value, queryType, boolType));
+    public SearchParamBuilder searchField(String name, Object value, SearchType searchType,
+                                          SearchType boolType, boolean isConstantScore) {
+        this.searchFieldList.add(new SearchField(name, value, searchType, boolType, isConstantScore));
         return this;
     }
 
@@ -59,28 +61,37 @@ public class SearchParamBuilder {
         return this;
     }
 
+    public SearchParamBuilder aggregation(AggregationBuilder aggregation) {
+        if (this.aggregationBuilders == null) {
+            this.aggregationBuilders = new ArrayList<>();
+        }
+        this.aggregationBuilders.add(aggregation);
+        return this;
+    }
+
     public SingleSearchParam buildSingleSearchParam() {
         if (searchFieldList.isEmpty()) {
             return null;
         }
         SingleSearchParam param = new SingleSearchParam();
         param.setSearchField(searchFieldList.get(0));
-        param.setOrderField(orderField);
-        param.setHighlightPreTags(highlightPreTags);
-        param.setHighlightPostTags(highlightPostTags);
-        param.setPageNo(pageNo);
-        param.setPageSize(pageSize);
+        initSearchParam(param);
         return param;
     }
 
     public MultiSearchParam buildMultiSearchParam() {
         MultiSearchParam param = new MultiSearchParam();
         param.setSearchFieldList(searchFieldList);
+        initSearchParam(param);
+        return param;
+    }
+
+    private void initSearchParam(AbstractSearchParam param) {
         param.setOrderField(orderField);
         param.setHighlightPreTags(highlightPreTags);
         param.setHighlightPostTags(highlightPostTags);
         param.setPageNo(pageNo);
         param.setPageSize(pageSize);
-        return param;
+        param.setAggregationBuilders(aggregationBuilders);
     }
 }

@@ -7,11 +7,12 @@ package cn.denvie.elasticsearch.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.elasticsearch.action.search.SearchResponse;
 
 import java.util.List;
 
 /**
- * 分页结果。
+ * 搜索结果。
  *
  * @author denvie
  * @since 2020/8/7
@@ -19,9 +20,10 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PagingResult<T> {
+public class SearchResult<T> {
     private long total;
     private List<T> dataList;
+    private SearchResponse originalResponse;
     private int pageNo;
     private int pageSize;
 }

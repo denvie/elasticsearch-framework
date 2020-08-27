@@ -23,9 +23,13 @@ public class SearchField {
     /**
      * 搜索类型
      */
-    private QueryType queryType;
+    private SearchType searchType;
     /**
-     * bool搜索类型
+     * 外层搜索类型，比如：bool搜索类型
      */
-    private QueryType boolType;
+    private SearchType outerSearchType;
+    /**
+     * 是否为constant_score搜索，不进行评分，可提高查询效率
+     */
+    private boolean isConstantScore;
 }

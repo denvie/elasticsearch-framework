@@ -10,9 +10,13 @@ import cn.denvie.elasticsearch.utils.SearchParamBuilder;
 import cn.denvie.elasticsearch.utils.SettingBuilder;
 import cn.denvie.spider.domain.JdGoods;
 import cn.denvie.spider.service.impl.JdGoodsParseService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +40,7 @@ import java.util.Map;
 @RestController
 public class ElasticsearchController {
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static String index = "jd-goods";
 
     @Autowired
     private ElasticsearchService elasticSearchService;
@@ -77,36 +83,36 @@ public class ElasticsearchController {
         String url = String.format("https://search.jd.com/Search?keyword=%s&page=%d", keyword, pageNo);
         List<JdGoods> jdGoodsList = jdGoodsParseService.parse(url);
         // 存入ElasticSearch
-        elasticSearchService.saveDocument("jd-goods", jdGoodsList.toArray(new JdGoods[]{}));
+        elasticSearchService.saveDocument(index, jdGoodsList.toArray(new JdGoods[]{}));
         return jdGoodsList;
     }
 
     @GetMapping("/searchJdGoods")
-    public PagingResult<JdGoods> searchJdGoods(String field, String keyword, int pageNo, int pageSize)
+    public SearchResult<JdGoods> searchJdGoods(String field, String keyword, int pageNo, int pageSize)
             throws IOException {
-        QueryType queryType = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(field).size() > 1
-                ? QueryType.MULTI_MATCH : QueryType.MATCH;
+        SearchType searchType = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(field).size() > 1
+                ? SearchType.MULTI_MATCH : SearchType.MATCH;
         SingleSearchParam searchParam = new SearchParamBuilder()
-                .searchField(new SearchField(field, keyword, queryType, null))
+                .searchField(new SearchField(field, keyword, searchType, null, false))
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .buildSingleSearchParam();
-        return elasticSearchService.searchDocuments("jd-goods", searchParam, JdGoods.class);
+        return elasticSearchService.searchDocuments(index, searchParam, JdGoods.class);
     }
 
     @GetMapping("/boolSearchJdGoods")
-    public PagingResult<JdGoods> boolSearchJdGoods(@RequestParam Map<String, String> params)
+    public SearchResult<JdGoods> boolSearchJdGoods(@RequestParam Map<String, String> params)
             throws IOException {
         SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
                 .pageNo(NumberUtils.toInt(params.get("pageNo"), 1))
                 .pageSize(NumberUtils.toInt(params.get("pageSize"), 10));
         if (StringUtils.isNoneBlank(params.get("title"))) {
             searchParamBuilder.searchField("title", params.get("title"),
-                    QueryType.MATCH, QueryType.BOOL_MUST);
+                    SearchType.MATCH, SearchType.BOOL_MUST, false);
         }
         if (StringUtils.isNoneBlank(params.get("shop"))) {
             searchParamBuilder.searchField("shop", params.get("shop"),
-                    QueryType.MATCH, QueryType.BOOL_MUST);
+                    SearchType.MATCH, SearchType.BOOL_MUST, false);
         }
         if (StringUtils.isNoneBlank(params.get("startTime"))) {
             try {
@@ -114,7 +120,7 @@ public class ElasticsearchController {
                 RangeValue value = new RangeValue();
                 value.gte(startTime);
                 searchParamBuilder.searchField("createTime", value,
-                        QueryType.RANGE, QueryType.BOOL_MUST);
+                        SearchType.RANGE, SearchType.BOOL_MUST, false);
             } catch (ParseException e) {
                 // ignore
             }
@@ -125,12 +131,30 @@ public class ElasticsearchController {
                 RangeValue value = new RangeValue();
                 value.lte(endTime);
                 searchParamBuilder.searchField("createTime", value,
-                        QueryType.RANGE, QueryType.BOOL_MUST);
+                        SearchType.RANGE, SearchType.BOOL_MUST, false);
             } catch (ParseException e) {
                 // ignore
             }
         }
         MultiSearchParam searchParam = searchParamBuilder.buildMultiSearchParam();
-        return elasticSearchService.boolSearchDocuments("jd-goods", searchParam, JdGoods.class);
+        return elasticSearchService.boolSearchDocuments(index, searchParam, JdGoods.class);
+    }
+
+    @GetMapping("/aggregationSearchJdGoods")
+    public String aggregationSearch(String field, String keyword) throws IOException {
+        SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
+                .searchField(new SearchField(field, keyword, SearchType.MATCH, null, true))
+                .pageNo(-1)
+                .pageSize(0);
+        DateHistogramAggregationBuilder dateHistogram = AggregationBuilders.dateHistogram("group_by_date");
+        dateHistogram.field("createTime");
+        dateHistogram.calendarInterval(DateHistogramInterval.DAY);
+        dateHistogram.format("yyyy-MM-dd");
+        dateHistogram.timeZone(ZoneId.of("+08:00"));
+        dateHistogram.minDocCount(0);
+        searchParamBuilder.aggregation(dateHistogram);
+        SearchResult<JdGoods> searchResult = elasticSearchService.searchDocuments(index,
+                searchParamBuilder.buildSingleSearchParam(), null);
+        return searchResult.getOriginalResponse().toString();
     }
 }

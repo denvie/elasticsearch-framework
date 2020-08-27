@@ -7,6 +7,9 @@ package cn.denvie.elasticsearch.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+
+import java.util.List;
 
 /**
  * 搜索参数。
@@ -24,4 +27,5 @@ public abstract class AbstractSearchParam {
     protected String highlightPostTags;
     protected int pageNo = 1;
     protected int pageSize = 10;
+    protected List<AggregationBuilder> aggregationBuilders;
 }

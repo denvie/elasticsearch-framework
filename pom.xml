@@ -13,8 +13,6 @@
     <artifactId>elasticsearch-spider</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>elasticsearch-spider</name>
-    <description>ElasticSearch Spider</description>
 
     <developers>
         <developer>
@@ -40,7 +38,7 @@
         <module>elasticsearch-core</module>
         <module>elasticsearch-spring-boot-autoconfigure</module>
         <module>elasticsearch-spring-boot-starter</module>
-        <module>jsoup-spider</module>
+        <module>jsoup-spider-demo</module>
     </modules>
 
 </project>

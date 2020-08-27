@@ -1,7 +1,0 @@
-server:
-  port: 8080
-
-elasticsearch:
-  hosts: localhost:9200
-  scheme: http
-  timeoutSeconds: 30
