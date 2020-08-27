@@ -18,8 +18,8 @@ public class SettingBuilder {
 
     public SettingBuilder() {
         settings = new HashMap<>();
-        settings.put("index.number_of_shards", "1");
-        settings.put("index.number_of_replicas", "1");
+        settings.put("number_of_shards", "1");
+        settings.put("number_of_replicas", "1");
     }
 
     /**
@@ -29,7 +29,7 @@ public class SettingBuilder {
      * @return SettingBuilder
      */
     public SettingBuilder numberOfShards(String number) {
-        settings.put("index.number_of_shards", number);
+        settings.put("number_of_shards", number);
         return this;
     }
 
@@ -40,7 +40,7 @@ public class SettingBuilder {
      * @return SettingBuilder
      */
     public SettingBuilder number_of_replicas(String number) {
-        settings.put("index.number_of_replicas", number);
+        settings.put("number_of_replicas", number);
         return this;
     }
 
