@@ -34,17 +34,17 @@ public class ElasticsearchProperties {
      */
     private boolean enableLogger = true;
     /**
-     * 连接超时
+     * 连接超时（秒）
      */
     private int connectTimeout = 10;
     /**
-     * 通信超时
+     * 通信超时（秒）
      */
     private int socketTimeout = 5;
     /**
-     * 单个请求超时时间（秒）
+     * 搜索请求超时时间（秒）
      */
-    private int requestTimeoutSeconds = 30;
+    private int searchTimeout = 30;
     /**
      * BasicAuth: 用户名
      */
@@ -102,12 +102,12 @@ public class ElasticsearchProperties {
         this.socketTimeout = socketTimeout;
     }
 
-    public int getRequestTimeoutSeconds() {
-        return requestTimeoutSeconds;
+    public int getSearchTimeout() {
+        return searchTimeout;
     }
 
-    public void setRequestTimeoutSeconds(int requestTimeoutSeconds) {
-        this.requestTimeoutSeconds = requestTimeoutSeconds;
+    public void setSearchTimeout(int searchTimeout) {
+        this.searchTimeout = searchTimeout;
     }
 
     public String getUsername() {

@@ -278,6 +278,8 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                 builder.aggregation(aggregation);
             }
         }
+        // 设置是否获取实际文档总数
+        builder.trackTotalHits(searchParam.isTrackTotalHits());
     }
 
     private <T> SearchResult<T> commitSearch(SearchRequest request, AbstractSearchParam searchParam,

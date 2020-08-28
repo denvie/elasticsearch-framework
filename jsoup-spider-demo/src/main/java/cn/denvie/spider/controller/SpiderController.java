@@ -32,13 +32,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Elasticsearch controller.
+ * Spider controller.
  *
  * @author denvie
  * @since 2020/8/4
  */
 @RestController
-public class ElasticsearchController {
+public class SpiderController {
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static String index = "jd-goods";
 

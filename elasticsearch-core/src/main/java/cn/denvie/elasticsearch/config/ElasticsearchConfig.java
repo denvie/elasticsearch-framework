@@ -89,6 +89,6 @@ public class ElasticsearchConfig {
     @ConditionalOnMissingBean
     public ElasticsearchService elasticsearchService(RestHighLevelClient restHighLevelClient,
                                                      ElasticsearchProperties properties) {
-        return new ElasticsearchServiceImpl(restHighLevelClient, properties.getRequestTimeoutSeconds());
+        return new ElasticsearchServiceImpl(restHighLevelClient, properties.getSearchTimeout());
     }
 }
