@@ -255,12 +255,12 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
     private void setupSearchBuilder(SearchSourceBuilder builder, AbstractSearchParam searchParam) {
         // 设置高亮搜索
         if (searchParam.getHighlightField() != null
-                && !StringUtils.isBlank(searchParam.getHighlightPreTags())
-                && !StringUtils.isBlank(searchParam.getHighlightPostTags())) {
+                && StringUtils.isNotBlank(searchParam.getHighlightField().getPreTags())
+                && StringUtils.isNotBlank(searchParam.getHighlightField().getPostTags())) {
             HighlightBuilder highlightBuilder = new HighlightBuilder();
-            highlightBuilder.field(searchParam.getHighlightField().getName());
-            highlightBuilder.preTags(searchParam.getHighlightPreTags());
-            highlightBuilder.postTags(searchParam.getHighlightPostTags());
+            highlightBuilder.field(searchParam.getHighlightField().getFieldName());
+            highlightBuilder.preTags(searchParam.getHighlightField().getPreTags());
+            highlightBuilder.postTags(searchParam.getHighlightField().getPostTags());
             builder.highlighter(highlightBuilder);
         }
         // 设置排序
@@ -289,8 +289,10 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
         if (docClass != null) {
             result = new ArrayList<>();
             for (SearchHit hit : response.getHits()) {
-                Map<String, Object> sourceAsMap = resolveHighlightField(hit, searchParam.getHighlightField(),
-                        searchParam.getHighlightPreTags(), searchParam.getHighlightPostTags());
+                Map<String, Object> sourceAsMap = resolveHighlightField(hit,
+                        searchParam.getHighlightField().getFieldName(),
+                        searchParam.getHighlightField().getPreTags(),
+                        searchParam.getHighlightField().getPostTags());
                 try {
                     result.add(BeanMapUtils.mapToBean(sourceAsMap, docClass));
                 } catch (Exception e) {
@@ -302,13 +304,15 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                 searchParam.getPageNo(), searchParam.getPageSize());
     }
 
-    private Map<String, Object> resolveHighlightField(SearchHit hit, SearchField highlightField,
+    private Map<String, Object> resolveHighlightField(SearchHit hit, String highlightField,
                                                       String preTags, String postTags) {
         Map<String, Object> sourceAsMap = hit.getSourceAsMap();
         // 解析高亮的字段
-        if (highlightField != null && !StringUtils.isBlank(preTags) && !StringUtils.isBlank(postTags)) {
+        if (StringUtils.isNotBlank(highlightField)
+                && StringUtils.isNotBlank(preTags)
+                && StringUtils.isNotBlank(postTags)) {
             Map<String, HighlightField> highlightFieldMap = hit.getHighlightFields();
-            HighlightField highlight = highlightFieldMap.get(highlightField.getName());
+            HighlightField highlight = highlightFieldMap.get(highlightField);
             if (highlight != null) {
                 Text[] texts = highlight.fragments();
                 StringBuilder sb = new StringBuilder();
@@ -316,7 +320,7 @@ public class ElasticsearchServiceImpl implements ElasticsearchService {
                     sb.append(text.string());
                 }
                 // 使用高亮的字段替换掉原来的内容
-                sourceAsMap.put(highlightField.getName(), sb.toString());
+                sourceAsMap.put(highlightField, sb.toString());
             }
         }
         return sourceAsMap;

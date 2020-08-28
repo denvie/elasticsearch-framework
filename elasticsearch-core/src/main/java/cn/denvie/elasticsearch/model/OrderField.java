@@ -4,7 +4,9 @@
 
 package cn.denvie.elasticsearch.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.elasticsearch.search.sort.SortOrder;
 
 /**
@@ -14,6 +16,8 @@ import org.elasticsearch.search.sort.SortOrder;
  * @since 2020/8/4
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderField {
     /**
      * 排序字段名称
@@ -23,14 +27,6 @@ public class OrderField {
      * 是否降序
      */
     private boolean isDesc;
-
-    public OrderField() {
-    }
-
-    public OrderField(String name, boolean isDesc) {
-        this.name = name;
-        this.isDesc = isDesc;
-    }
 
     /**
      * 获取排序方式。

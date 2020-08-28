@@ -26,12 +26,15 @@
 
 ```yaml
 elasticsearch:
-  hosts: localhost:9200
+  hosts: localhost:9200,localhost:19200
   scheme: http
-  timeoutSeconds: 30
+  connect-timeout: 10
+  socket-timeout: 5
+  search-timeout: 30
+  enable-logger: true
 ```
 
-- 注入**ElasticsearchService**
+- 注入**ElasticsearchService**，使用示例：
 
 ```java
 import cn.denvie.elasticsearch.model.*;
@@ -46,20 +49,22 @@ public class TestService {
         String index = "user-index";
         // 创建索引
         elasticSearchService.createIndex(index);
-        // 保存文档
-        User user = new User("Denvie", 18, "户外运动，打篮球");
+        
+        // 保存文档 User(name, age, hobbies, createTime)
+        User user = new User("Denvie", 18, "户外运动，打篮球", new Date());
         elasticSearchService.saveDocument(index, User);
+        
         // 单项搜索，比如 match, multi_match、term、range 等
         SingleSearchParam singleSearchParam = new SearchParamBuilder()
                 .searchField(new SearchField("name", "Denvie", QueryType.MATCH, null))
-                //.searchField(new SearchField("name,hobbies", "Denvie户外", QueryType.MULTI_MATCH, null))
+                //.searchField(new SearchField("name, hobbies", "Denvie户外", QueryType.MULTI_MATCH, null))
                 .orderField(new OrderField("age", true))
-                .highlightPreTags("<span style='color: read;'>")
-                .highlightPostTags("</span")
-                .pageNo(1)
-                .pageSize(10)
+            	.highlightField(new HighlightField(
+                        "name", "<span style='color: read;'>", "</span>"))
+                .pageNo(1).pageSize(10).trackTotalHits(true)
                 .buildSingleSearchParam();
         elasticSearchService.searchDocuments(index, singleSearchParam, User.class);
+        
         // bool搜索
         SearchParamBuilder multiSearchParamBuilder = new SearchParamBuilder()
                 .searchField("name", "Denvie", QueryType.MATCH, QueryType.BOOL_MUST)
@@ -68,132 +73,162 @@ public class TestService {
         rangeValue.gte(15);
         rangeValue.lte(25);
         multiSearchParamBuilder.searchField("age", rangeValue, QueryType.RANGE, QueryType.BOOL_MUST);
-        multiSearchParamBuilder.pageNo(1).pageSize(10);
+        multiSearchParamBuilder.pageNo(1).pageSize(10).trackTotalHits(true);
         MultiSearchParam multiSearchParam = multiSearchParamBuilder.buildMultiSearchParam();
         elasticSearchService.boolSearchDocuments(index, multiSearchParam, User.class);
-        // ...
+        
+        // 日期直方图聚合搜索
+        SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
+                .searchField(new SearchField(field, keyword, SearchType.MATCH, null, true))
+                .aggregation(AggregationUtils.dateHistogram("group_by_date", "createTime"))
+                .withOriginalResponse(true).pageNo(-1).pageSize(0);
+        elasticSearchService.searchDocuments(index,
+                searchParamBuilder.buildSingleSearchParam(), null).toString();
     }
 }
 ```
 
 
 
-## jsoup-spider接口
+## jsoup-spider-demo示例接口
 
 * 爬取京东商品：
-    http://localhost:8080/crawlJdGoods?keyword=java&pageNo=1
-* 搜索京东商品：
-    http://localhost:8080/searchJdGoods?field=title&keyword=java&pageNo=1&pageSize=5
+
+```
+http://localhost:8080/crawlJdGoods?keyword=java&pageNo=1
+```
+
+* 单字段搜索：
+
+```
+http://localhost:8080/searchJdGoods?field=title&keyword=java&pageNo=1&pageSize=5
+```
+
 * 多字段搜索：
-    http://localhost:8080/searchJdGoods?field=title,shop&keyword=java&pageNo=1&pageSize=5
+
+```
+http://localhost:8080/searchJdGoods?field=title,shop&keyword=java&pageNo=1&pageSize=5
+```
+
 * 多条件搜索：
-    http://localhost:8080/boolSearchJdGoods?title=java&shop=yyy&startTime=2020-08-07 12:12:12&endTime=2020-08-08 12:12:12&pageNo=1&pageSize=5
+
+```
+http://localhost:8080/boolSearchJdGoods?title=java&shop=人民邮电出版社&startTime=2020-08-07 12:12:12&endTime=2020-08-08 12:12:12&pageNo=1&pageSize=5
+```
+
+* 日期直方图聚合搜索：
+
+ ```
+http://localhost:8080/aggregationSearchJdGoods?field=title&keyword=小米10至尊版
+ ```
+
+
 
 
 
 ## 自定义spring-boot-starter步骤
 
-1. 新建xxx-spring-boot-autoconfigure模块
+==一、新建**xxx-spring-boot-autoconfigure**模块==
 
-   1. 新建XxxAutoConfiguration自动配置类及XxxProperties属性配置类，例如：
+1. 新建**XxxAutoConfiguration**自动配置类及**XxxProperties**属性配置类，例如：
 
-      ```java
-      @Configuration(proxyBeanMethods = false)
-      @EnableConfigurationProperties(ElasticsearchProperties.class)
-      public class ElasticsearchAutoConfiguration {
-      
-          @Bean
-          @ConditionalOnMissingBean
-          public RestHighLevelClient restHighLevelClient(ElasticsearchProperties properties) {
-              HttpHost[] httpHosts = new HttpHost[properties.getHosts().size()];
-              for (int i = 0; i < properties.getHosts().size(); i++) {
-                  String[] splits = properties.getHosts().get(i).split(":");
-                  httpHosts[i] = new HttpHost(splits[0].trim(),
-                          Integer.parseInt(splits[1].trim()), properties.getScheme());
-              }
-              return new RestHighLevelClient(RestClient.builder(httpHosts));
-          }
-      
-          @Bean
-          @ConditionalOnMissingBean
-          public ElasticsearchService elasticsearchService(RestHighLevelClient restHighLevelClient,
-                                                           ElasticsearchProperties properties) {
-              ElasticsearchService elasticsearchService = new ElasticsearchServiceImpl(
-                      restHighLevelClient, properties.getTimeoutSeconds());
-              return elasticsearchService;
-          }
-      }
-      ```
+   ```java
+   @Configuration(proxyBeanMethods = false)
+   @EnableConfigurationProperties(ElasticsearchProperties.class)
+   public class ElasticsearchAutoConfiguration {
+   
+       @Bean
+       @ConditionalOnMissingBean
+       public RestHighLevelClient restHighLevelClient(ElasticsearchProperties properties) {
+           HttpHost[] httpHosts = new HttpHost[properties.getHosts().size()];
+           for (int i = 0; i < properties.getHosts().size(); i++) {
+               String[] splits = properties.getHosts().get(i).split(":");
+               httpHosts[i] = new HttpHost(splits[0].trim(),
+                       Integer.parseInt(splits[1].trim()), properties.getScheme());
+           }
+           return new RestHighLevelClient(RestClient.builder(httpHosts));
+       }
+   
+       @Bean
+       @ConditionalOnMissingBean
+       public ElasticsearchService elasticsearchService(RestHighLevelClient restHighLevelClient,
+                                                        ElasticsearchProperties properties) {
+           ElasticsearchService elasticsearchService = new ElasticsearchServiceImpl(
+                   restHighLevelClient, properties.getTimeoutSeconds());
+           return elasticsearchService;
+       }
+   }
+   ```
 
-      ```java
-      @Data
-      @ConfigurationProperties(prefix = "elasticsearch")
-      public class ElasticsearchProperties {
-          /**
-           * Elasticsearch主机，多个以","分隔
-           */
-          private List<String> hosts = Collections.singletonList("localhost:9200");
-          /**
-           * 连接协议
-           */
-          private String scheme = "http";
-          /**
-           * 超时时间（秒）
-           */
-          private int timeoutSeconds = 30;
-      }
-      ```
+   ```java
+   @Data
+   @ConfigurationProperties(prefix = "elasticsearch")
+   public class ElasticsearchProperties {
+       /**
+        * Elasticsearch主机，多个以","分隔
+        */
+       private List<String> hosts = Collections.singletonList("localhost:9200");
+       /**
+        * 连接协议
+        */
+       private String scheme = "http";
+       /**
+        * 搜索超时时间（秒）
+        */
+       private int searchTimeout = 30;
+   }
+   ```
 
-      
+   
 
-   2. 在**resources**资源文件夹下新建**META-INF/spring.factories**，内容如下：
+2. 在**resources**资源文件夹下新建**META-INF/spring.factories**，内容如下：
 
-      ```properties
-      # Auto Configure
-      org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-      your.package.XxxAutoConfiguration
-      ```
+   ```properties
+   # Auto Configure
+   org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+   your.package.XxxAutoConfiguration
+   ```
 
-      
+   
 
-   3. **pom.xml**配置文件中，除了依赖自己的服务jar包之外，还需要添加以下依赖，注意需要配置为使用**maven-jar-plugin**进行打包：
+3. **pom.xml**配置文件中，除了依赖自己的服务jar包之外，还需要添加以下依赖，注意需要配置为使用**maven-jar-plugin**进行打包：
 
-      ```xml
-      <dependencies>     
-          <dependency>
-              <groupId>your.groupId</groupId>
-              <artifactId>your.business.artifactId</artifactId>
-              <version>1.0.0-SNAPSHOT</version>
-          </dependency>
-          <dependency>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-autoconfigure</artifactId>
-          </dependency>
-          <dependency>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-autoconfigure-processor</artifactId>
-              <optional>true</optional>
-          </dependency>
-          <dependency>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-configuration-processor</artifactId>
-              <optional>true</optional>
-          </dependency>
-      </dependencies>
-      <build>
-          <plugins>
-              <!-- 注意：这里要使用Apache Maven打成普通Jar包 -->
-              <plugin>
-                  <groupId>org.apache.maven.plugins</groupId>
-                  <artifactId>maven-jar-plugin</artifactId>
-              </plugin>
-          </plugins>
-      </build>
-      ```
+   ```xml
+   <dependencies>     
+       <dependency>
+           <groupId>your.groupId</groupId>
+           <artifactId>your.business.artifactId</artifactId>
+           <version>1.0.0-SNAPSHOT</version>
+       </dependency>
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-autoconfigure</artifactId>
+       </dependency>
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-autoconfigure-processor</artifactId>
+           <optional>true</optional>
+       </dependency>
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-configuration-processor</artifactId>
+           <optional>true</optional>
+       </dependency>
+   </dependencies>
+   <build>
+       <plugins>
+           <!-- 注意：这里要使用Apache Maven打成普通Jar包 -->
+           <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-jar-plugin</artifactId>
+           </plugin>
+       </plugins>
+   </build>
+   ```
 
-      
+   
 
-2. 新建xxx-spring-boot-starter模块
+==二、新建**xxx-spring-boot-starter**模块==
 
 这个模块只需要一个**pom.xml**把xxx-spring-boot-autoconfigure依赖进来就可以了，这里也需要使用**maven-jar-plugin**进行打包，比如：
 
@@ -220,7 +255,9 @@ public class TestService {
 </build>
 ```
 
-      
+​      
 
-3. 其他项目中直接依赖xxx-spring-boot-starter，配置需要的属性即可
+==三、其他项目中直接依赖**xxx-spring-boot-starter**，配置需要的属性即可==
+
+
 

@@ -19,12 +19,14 @@ import java.util.List;
 public class SearchParamBuilder {
     private List<SearchField> searchFieldList = new ArrayList<>();
     private OrderField orderField;
+    private HighlightField highlightField;
     private String highlightPreTags;
     private String highlightPostTags;
     private int pageNo = 1;
     private int pageSize = 10;
     private List<AggregationBuilder> aggregationBuilders;
     private boolean trackTotalHits;
+    private boolean withOriginalResponse;
 
     public SearchParamBuilder searchField(SearchField searchField) {
         this.searchFieldList.add(searchField);
@@ -49,24 +51,13 @@ public class SearchParamBuilder {
     }
 
     /**
-     * 设置高亮前缀标签。
+     * 设置高亮字段。
      *
-     * @param highlightPreTags 高亮前缀标签
+     * @param highlightField    高亮字段
      * @return SearchParamBuilder
      */
-    public SearchParamBuilder highlightPreTags(String highlightPreTags) {
-        this.highlightPreTags = highlightPreTags;
-        return this;
-    }
-
-    /**
-     * 设置高亮后缀标签。
-     *
-     * @param highlightPostTags 高亮后缀标签
-     * @return SearchParamBuilder
-     */
-    public SearchParamBuilder highlightPostTags(String highlightPostTags) {
-        this.highlightPostTags = highlightPostTags;
+    public SearchParamBuilder highlightField(HighlightField highlightField) {
+        this.highlightField = highlightField;
         return this;
     }
 
@@ -118,6 +109,17 @@ public class SearchParamBuilder {
     }
 
     /**
+     * 设置搜索结果是否包含原生的SearchResponse引用。
+     *
+     * @param withOriginalResponse true或者false
+     * @return SearchParamBuilder
+     */
+    public SearchParamBuilder withOriginalResponse(boolean withOriginalResponse) {
+        this.withOriginalResponse = withOriginalResponse;
+        return this;
+    }
+
+    /**
      * 构建单字段搜索参数。
      *
      * @return SingleSearchParam
@@ -146,11 +148,11 @@ public class SearchParamBuilder {
 
     private void initSearchParam(AbstractSearchParam param) {
         param.setOrderField(orderField);
-        param.setHighlightPreTags(highlightPreTags);
-        param.setHighlightPostTags(highlightPostTags);
+        param.setHighlightField(highlightField);
         param.setPageNo(pageNo);
         param.setPageSize(pageSize);
         param.setAggregationBuilders(aggregationBuilders);
         param.setTrackTotalHits(trackTotalHits);
+        param.setWithOriginalResponse(withOriginalResponse);
     }
 }

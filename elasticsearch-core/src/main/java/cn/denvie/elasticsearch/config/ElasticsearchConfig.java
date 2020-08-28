@@ -8,7 +8,9 @@ import cn.denvie.elasticsearch.properties.ElasticsearchProperties;
 import cn.denvie.elasticsearch.service.ElasticsearchService;
 import cn.denvie.elasticsearch.service.impl.ElasticsearchServiceImpl;
 import cn.denvie.elasticsearch.utils.HttpLoggingInterceptor;
+import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
@@ -25,6 +27,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 
 /**
  * Elasticsearch配置。
@@ -40,9 +43,11 @@ public class ElasticsearchConfig {
     public RestHighLevelClient restHighLevelClient(ElasticsearchProperties properties) {
         HttpHost[] httpHosts = new HttpHost[properties.getHosts().size()];
         for (int i = 0; i < properties.getHosts().size(); i++) {
-            String[] splits = properties.getHosts().get(i).split(":");
-            httpHosts[i] = new HttpHost(splits[0].trim(),
-                    Integer.parseInt(splits[1].trim()), properties.getScheme());
+            List<String> host = Splitter.on(":").trimResults()
+                    .omitEmptyStrings()
+                    .splitToList(properties.getHosts().get(i));
+            httpHosts[i] = new HttpHost(host.get(0), NumberUtils.toInt(host.get(1), 9200),
+                    properties.getScheme());
         }
         RestClientBuilder builder = RestClient.builder(httpHosts);
         if (properties.getPathPrefix() != null && properties.getPathPrefix().trim().length() > 0) {

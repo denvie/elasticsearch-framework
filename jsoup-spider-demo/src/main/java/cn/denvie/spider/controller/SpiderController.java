@@ -6,17 +6,14 @@ package cn.denvie.spider.controller;
 
 import cn.denvie.elasticsearch.model.*;
 import cn.denvie.elasticsearch.service.ElasticsearchService;
+import cn.denvie.elasticsearch.utils.AggregationUtils;
 import cn.denvie.elasticsearch.utils.SearchParamBuilder;
 import cn.denvie.elasticsearch.utils.SettingBuilder;
 import cn.denvie.spider.domain.JdGoods;
 import cn.denvie.spider.service.impl.JdGoodsParseService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +44,7 @@ public class SpiderController {
     private JdGoodsParseService jdGoodsParseService;
 
     /**
-     * 创建京东商品索引。
-     *
-     * @param index 索引名称
-     * @return true: 创建成功；false: 创建失败
-     * @throws Exception
+     * 创建索引。
      */
     @PostMapping("/createJdGoodsIndex")
     public boolean createJdGoodsIndex(String index) throws IOException {
@@ -71,11 +63,6 @@ public class SpiderController {
 
     /**
      * 爬取京东商品。
-     *
-     * @param keyword 京东商品关键字
-     * @param pageNo  爬取第几页数据
-     * @return 商品列表
-     * @throws Exception
      */
     @GetMapping("/crawlJdGoods")
     public List<JdGoods> crawlJdGoods(String keyword, int pageNo) throws IOException {
@@ -90,10 +77,12 @@ public class SpiderController {
     @GetMapping("/searchJdGoods")
     public SearchResult<JdGoods> searchJdGoods(String field, String keyword, int pageNo, int pageSize)
             throws IOException {
-        SearchType searchType = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(field).size() > 1
-                ? SearchType.MULTI_MATCH : SearchType.MATCH;
+        List<String> fieldList = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(field);
+        SearchType searchType = fieldList.size() > 1 ? SearchType.MULTI_MATCH : SearchType.MATCH;
         SingleSearchParam searchParam = new SearchParamBuilder()
                 .searchField(new SearchField(field, keyword, searchType, null, false))
+                .highlightField(new HighlightField(
+                        fieldList.get(0), "<span style='color: read;'>", "</span>"))
                 .pageNo(pageNo)
                 .pageSize(pageSize)
                 .buildSingleSearchParam();
@@ -104,6 +93,7 @@ public class SpiderController {
     public SearchResult<JdGoods> boolSearchJdGoods(@RequestParam Map<String, String> params)
             throws IOException {
         SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
+                .trackTotalHits(true)
                 .pageNo(NumberUtils.toInt(params.get("pageNo"), 1))
                 .pageSize(NumberUtils.toInt(params.get("pageSize"), 10));
         if (StringUtils.isNoneBlank(params.get("title"))) {
@@ -122,7 +112,7 @@ public class SpiderController {
                 searchParamBuilder.searchField("createTime", value,
                         SearchType.RANGE, SearchType.BOOL_MUST, false);
             } catch (ParseException e) {
-                // ignore
+                e.printStackTrace();
             }
         }
         if (StringUtils.isNoneBlank(params.get("endTime"))) {
@@ -133,7 +123,7 @@ public class SpiderController {
                 searchParamBuilder.searchField("createTime", value,
                         SearchType.RANGE, SearchType.BOOL_MUST, false);
             } catch (ParseException e) {
-                // ignore
+                e.printStackTrace();
             }
         }
         MultiSearchParam searchParam = searchParamBuilder.buildMultiSearchParam();
@@ -144,17 +134,9 @@ public class SpiderController {
     public String aggregationSearch(String field, String keyword) throws IOException {
         SearchParamBuilder searchParamBuilder = new SearchParamBuilder()
                 .searchField(new SearchField(field, keyword, SearchType.MATCH, null, true))
-                .pageNo(-1)
-                .pageSize(0);
-        DateHistogramAggregationBuilder dateHistogram = AggregationBuilders.dateHistogram("group_by_date");
-        dateHistogram.field("createTime");
-        dateHistogram.calendarInterval(DateHistogramInterval.DAY);
-        dateHistogram.format("yyyy-MM-dd");
-        dateHistogram.timeZone(ZoneId.of("+08:00"));
-        dateHistogram.minDocCount(0);
-        searchParamBuilder.aggregation(dateHistogram);
-        SearchResult<JdGoods> searchResult = elasticSearchService.searchDocuments(index,
-                searchParamBuilder.buildSingleSearchParam(), null);
-        return searchResult.getOriginalResponse().toString();
+                .aggregation(AggregationUtils.dateHistogram("group_by_date", "createTime"))
+                .withOriginalResponse(true).pageNo(-1).pageSize(0);
+        return elasticSearchService.searchDocuments(index,
+                searchParamBuilder.buildSingleSearchParam(), null).toString();
     }
 }

@@ -28,15 +28,7 @@ public abstract class AbstractSearchParam {
     /**
      * 高亮字段
      */
-    protected SearchField highlightField;
-    /**
-     * 标签前缀标签
-     */
-    protected String highlightPreTags;
-    /**
-     * 高亮后缀标签
-     */
-    protected String highlightPostTags;
+    protected HighlightField highlightField;
     /**
      * 页数
      */
@@ -53,4 +45,8 @@ public abstract class AbstractSearchParam {
      * 是否获取实际文档总数。默认情况下，当文档总数超过10000时，总数只显示10000
      */
     protected boolean trackTotalHits = false;
+    /**
+     * 搜索结果是否包含原生的SearchResponse引用
+     */
+    protected boolean withOriginalResponse = false;
 }
