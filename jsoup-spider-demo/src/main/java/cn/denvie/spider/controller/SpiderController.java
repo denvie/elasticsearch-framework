@@ -4,11 +4,11 @@
 
 package cn.denvie.spider.controller;
 
-import cn.denvie.elasticsearch.model.*;
-import cn.denvie.elasticsearch.service.ElasticsearchService;
-import cn.denvie.elasticsearch.utils.AggregationUtils;
-import cn.denvie.elasticsearch.utils.SearchParamBuilder;
-import cn.denvie.elasticsearch.utils.SettingBuilder;
+import cn.denvie.elasticsearch.client.model.*;
+import cn.denvie.elasticsearch.client.service.ElasticsearchService;
+import cn.denvie.elasticsearch.client.utils.AggregationUtils;
+import cn.denvie.elasticsearch.client.utils.SearchParamBuilder;
+import cn.denvie.elasticsearch.client.utils.SettingBuilder;
 import cn.denvie.spider.domain.JdGoods;
 import cn.denvie.spider.service.impl.JdGoodsParseService;
 import com.google.common.base.Splitter;

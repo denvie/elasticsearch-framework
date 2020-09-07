@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>cn.denvie</groupId>
-        <artifactId>elasticsearch-spider</artifactId>
+        <groupId>cn.denvie.elasticsearch</groupId>
+        <artifactId>elasticsearch-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>cn.denvie</groupId>
+            <groupId>cn.denvie.elasticsearch</groupId>
             <artifactId>elasticsearch-spring-boot-starter</artifactId>
             <version>${parent.version}</version>
         </dependency>

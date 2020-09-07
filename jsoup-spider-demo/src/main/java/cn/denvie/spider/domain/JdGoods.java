@@ -4,8 +4,8 @@
 
 package cn.denvie.spider.domain;
 
-import cn.denvie.elasticsearch.model.EsIndexBean;
-import cn.denvie.elasticsearch.utils.MappingUtils;
+import cn.denvie.elasticsearch.client.model.EsIndexBean;
+import cn.denvie.elasticsearch.client.utils.MappingUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

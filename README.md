@@ -1,5 +1,5 @@
 # 简介
-封装Elasticsearch简易操作框架**elasticsearch-core**，使用JSoup爬取数据，并整合**elasticsearch-core**进行数据存储与检索。
+封装Elasticsearch简易操作框架**elasticsearch-client**，使用JSoup爬取数据，并整合**elasticsearch-client**进行数据存储与检索。
 
 
 
@@ -10,13 +10,13 @@
 
 
 
-## SpringBoot整合elasticsearch-core
+## SpringBoot整合elasticsearch-client
 
 - 在**pom.xml**中添加starter依赖
 
 ```xml
 <dependency>
-    <groupId>cn.denvie</groupId>
+    <groupId>cn.denvie.elasticsearch</groupId>
     <artifactId>elasticsearch-spring-boot-starter</artifactId>
     <version>${newest.version}</version>
 </dependency>
@@ -37,9 +37,9 @@ elasticsearch:
 - 注入**ElasticsearchService**，使用示例：
 
 ```java
-import cn.denvie.elasticsearch.model.*;
-import cn.denvie.elasticsearch.service.ElasticsearchService;
-import cn.denvie.elasticsearch.utils.SearchParamBuilder;
+import cn.denvie.elasticsearch.client.model.*;
+import cn.denvie.elasticsearch.client.service.ElasticsearchService;
+import cn.denvie.elasticsearch.client.utils.SearchParamBuilder;
 
 public class TestService {
     @Autowired
